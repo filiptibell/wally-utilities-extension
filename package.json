@@ -1,0 +1,79 @@
+{
+	"name": "wally-utils",
+	"displayName": "Wally Utilities",
+	"description": "Diagnostics & completions for wally manifests",
+	"version": "0.0.1",
+	"engines": {
+		"vscode": "^1.69.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [
+		"onLanguage:toml"
+	],
+	"main": "./out/extension.js",
+	"contributes": {
+		"languages": [
+			{
+				"id": "toml",
+				"filenames": [
+					"wally.toml",
+					"wally.lock"
+				]
+			}
+		],
+		"configuration": {
+			"title": "Wally Utilities",
+			"properties": {
+				"wally.auth.token": {
+					"type": "string",
+					"default": "",
+					"description": "A GitHub personal access token in the format \"ghp_abcdefghij1234567890\" to use for authentication.\nThis can be set to avoid the request limit or to use a private Wally index."
+				},
+				"wally.completion.enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "If autocompletion should be enabled or not."
+				},
+				"wally.diagnostics.enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "If diagnostics should be enabled or not."
+				},
+				"wally.versionLens.enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "If the version lens should be enabled or not."
+				}
+			}
+		}
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"watch": "tsc -watch -p ./",
+		"pretest": "npm run compile && npm run lint",
+		"lint": "eslint src --ext ts"
+	},
+	"devDependencies": {
+		"@types/glob": "^7.2.0",
+		"@types/mocha": "^9.1.1",
+		"@types/node": "16.x",
+		"@types/semver": "^7.3.10",
+		"@types/vscode": "^1.69.0",
+		"@typescript-eslint/eslint-plugin": "^5.27.0",
+		"@typescript-eslint/parser": "^5.27.0",
+		"eslint": "^8.16.0",
+		"glob": "^8.0.3",
+		"mocha": "^10.0.0",
+		"typescript": "^4.7.2"
+	},
+	"dependencies": {
+		"@octokit/rest": "^19.0.3",
+		"@toml-tools/lexer": "^0.3.1",
+		"axios": "^0.27.2",
+		"semver": "^7.3.7",
+		"toml": "^3.0.0"
+	}
+}
