@@ -29,7 +29,7 @@
 				"wally.auth.token": {
 					"type": "string",
 					"default": "",
-					"description": "A GitHub personal access token in the format \"ghp_abcdefghij1234567890\" to use for authentication.\nThis can be set to avoid the request limit or to use a private Wally index."
+					"markdownDescription": "A GitHub personal access token in the format `ghp_abcdefghij1234567890` to use for authentication.\nThis can be set to avoid the request limit or to use a private Wally index."
 				},
 				"wally.completion.enabled": {
 					"type": "boolean",
@@ -45,6 +45,20 @@
 					"type": "boolean",
 					"default": true,
 					"description": "If the version lens should be enabled or not."
+				},
+				"wally.log.level": {
+					"enum": [
+						"Quiet",
+						"Normal",
+						"Verbose"
+					],
+					"enumDescriptions": [
+						"Nothing will be logged",
+						"Only error messages will be logged",
+						"Everything will be logged, recommended only for debugging issues"
+					],
+					"default": "Normal",
+					"markdownDescription": "What should be logged in the `Wally` output channel.\nSet to `Quiet` to disable logging completely."
 				}
 			}
 		}

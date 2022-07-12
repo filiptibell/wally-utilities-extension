@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import { parseTomlTokens } from "./toml";
+import { parseTomlTokens } from "../utils/toml";
 
 
 

@@ -1,8 +1,10 @@
 import * as vscode from "vscode";
 
-import { parseWallyManifest, WallyDependency } from "./utils/manifest";
+import { WallyLogHelper } from "./utils/logger";
 
-import { WallyRegistryHelper } from "./utils/registry";
+import { parseWallyManifest, WallyDependency } from "./wally/manifest";
+
+import { WallyRegistryHelper } from "./wally/registry";
 
 
 
@@ -34,25 +36,15 @@ const isWallyManifest = (document: vscode.TextDocument) => {
 
 
 export class WallyCompletionProvider implements vscode.CompletionItemProvider<vscode.CompletionItem> {
-	private log: vscode.OutputChannel;
+	private log: WallyLogHelper;
 	private reg: WallyRegistryHelper;
 	
 	private enabled: boolean;
 	
-	constructor(logChannel: vscode.OutputChannel, registryHelper: WallyRegistryHelper) {
-		this.log = logChannel;
+	constructor(logHelper: WallyLogHelper, registryHelper: WallyRegistryHelper) {
+		this.log = logHelper;
 		this.reg = registryHelper;
 		this.enabled = true;
-	}
-	
-	private logPlaintext(txt: string) {
-		// TODO: Check if logging setting is on
-		this.log.appendLine(`// ${txt}`);
-	}
-	
-	private logJson(json: any) {
-		// TODO: Check if logging setting is on
-		this.log.appendLine(JSON.stringify(json, undefined, 4));
 	}
 	
 	private async providePackageAuthorCompletions(items: vscode.CompletionItem[], author: string) {
@@ -96,7 +88,7 @@ export class WallyCompletionProvider implements vscode.CompletionItemProvider<vs
 	async provideCompletionItems(document: vscode.TextDocument, position: vscode.Position) {
 		// Make sure completion is enabled
 		if (!this.enabled) {
-			this.logPlaintext("Completion is not enabled");
+			this.log.verboseText("Completion is not enabled");
 			return null;
 		}
 		// Check if this toml file is a wally manifest
@@ -140,7 +132,7 @@ export class WallyCompletionProvider implements vscode.CompletionItemProvider<vs
 					}
 				}
 			} else {
-				this.logPlaintext("Manifest could not be parsed");
+				this.log.normalText("Manifest could not be parsed");
 			}
 			return items;
 		}

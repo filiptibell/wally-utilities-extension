@@ -1,8 +1,13 @@
 import * as vscode from "vscode";
 
-import { WallyGithubHelper } from "./utils/github";
+import {
+	WallyLogLevel,
+	WallyLogHelper,
+} from "./utils/logger";
 
-import { WallyRegistryHelper } from "./utils/registry";
+import { WallyGithubHelper } from "./wally/github";
+
+import { WallyRegistryHelper } from "./wally/registry";
 
 import {
 	WALLY_COMPLETION_SELECTOR,
@@ -12,10 +17,9 @@ import {
 
 export function activate(context: vscode.ExtensionContext) {
 	const conf = vscode.workspace.getConfiguration('wally');
-	// Create output channel in json-with-comments format
-	const log = vscode.window.createOutputChannel("Wally", "jsonc");
-	log.appendLine(JSON.stringify(conf));
-	log.appendLine("// Started");
+	// Create logger class
+	const logLevel = conf.get<WallyLogLevel>("log.level");
+	const log = new WallyLogHelper(logLevel || "Normal", true);
 	// Create classes
 	const git = new WallyGithubHelper(log);
 	const reg = new WallyRegistryHelper(log, git);
@@ -35,6 +39,8 @@ export function activate(context: vscode.ExtensionContext) {
 			git.setAuthToken(conf.get<string>("auth.token") || null);
 		} else if (event.affectsConfiguration("completion.enabled")) {
 			compl.setEnabled(conf.get<boolean>("completion.enabled") !== false);
+		} else if (event.affectsConfiguration("log.level")) {
+			log.setLevel(conf.get<WallyLogLevel>("log.level") || "Normal");
 		}
 	});
 	// Add everything to cleanup on deactivation

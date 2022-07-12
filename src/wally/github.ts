@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 
-import * as vscode from "vscode";
-
 import { Octokit } from "@octokit/rest";
+
+import { WallyLogHelper } from "../utils/logger";
 
 
 
@@ -41,27 +41,17 @@ export class WallyGithubHelper {
 	private config: WallyGithubRegistryConfig | null;
 	private nameCache: Map<string, string[]>;
 	
-	private log: vscode.OutputChannel;
+	private log: WallyLogHelper;
 	private kit: Octokit;
 	
-	constructor(logChannel: vscode.OutputChannel) {
+	constructor(logHelper: WallyLogHelper) {
 		this.registryUser = null;
 		this.registryRepo = null;
 		this.tree = null;
 		this.config = null;
 		this.nameCache = new Map();
-		this.log = logChannel;
+		this.log = logHelper;
 		this.kit = new Octokit();
-	}
-	
-	private logPlaintext(txt: string) {
-		// TODO: Check if logging setting is on
-		this.log.appendLine(`// ${txt}`);
-	}
-	
-	private logJson(json: any) {
-		// TODO: Check if logging setting is on
-		this.log.appendLine(JSON.stringify(json, undefined, 4));
 	}
 	
 	private async getRegistryTree(): Promise<WallyGithubRegistryTree | null> {
@@ -71,7 +61,7 @@ export class WallyGithubHelper {
 				return this.tree;
 			}
 			// Fetch tree from github
-			this.logPlaintext("Fetching registry tree...");
+			this.log.verboseText("Fetching registry tree...");
 			const treeResponse = await this.kit.git.getTree({
 				owner: this.registryUser,
 				repo: this.registryRepo,
@@ -110,7 +100,7 @@ export class WallyGithubHelper {
 				this.tree = tree;
 				return tree;
 			}
-			this.logPlaintext("Failed to fetch registry tree");
+			this.log.normalText("Failed to fetch registry tree");
 		}
 		return null;
 	}
@@ -123,7 +113,7 @@ export class WallyGithubHelper {
 				return this.config;
 			}
 			// Fetch config contents blob from tree
-			this.logPlaintext("Fetching registry config...");
+			this.log.verboseText("Fetching registry config...");
 			const fileResponse = await this.kit.git.getBlob({
 				owner: this.registryUser,
 				repo: this.registryRepo,
@@ -133,7 +123,7 @@ export class WallyGithubHelper {
 				const contents = Buffer.from(fileResponse.data.content, "base64");
 				const config = JSON.parse(contents.toString());
 				this.config = config;
-				this.logJson(config);
+				this.log.verboseJson(config);
 				return config;
 			}
 		}
@@ -214,7 +204,7 @@ export class WallyGithubHelper {
 			}
 			if (authorSHA.length > 0) {
 				// Fetch package names
-				this.logPlaintext(`Fetching package names for '${lowered}'...`);
+				this.log.verboseText(`Fetching package names for '${lowered}'...`);
 				const treeResponse = await this.kit.git.getTree({
 					owner: this.registryUser,
 					repo: this.registryRepo,

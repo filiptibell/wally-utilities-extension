@@ -1,8 +1,8 @@
-import * as vscode from "vscode";
-
 import axios from "axios";
 
 import { compare as compareSemver } from "semver";
+
+import { WallyLogHelper } from "../utils/logger";
 
 import { WallyGithubHelper } from "./github";
 
@@ -27,22 +27,12 @@ type WallyApiPackageVersion = {
 
 
 export class WallyRegistryHelper {
-	private log: vscode.OutputChannel;
+	private log: WallyLogHelper;
 	private git: WallyGithubHelper;
 	
-	constructor(logChannel: vscode.OutputChannel, githubHelper: WallyGithubHelper) {
+	constructor(logChannel: WallyLogHelper, githubHelper: WallyGithubHelper) {
 		this.log = logChannel;
 		this.git = githubHelper;
-	}
-	
-	private logPlaintext(txt: string) {
-		// TODO: Check if logging setting is on
-		this.log.appendLine(`// ${txt}`);
-	}
-	
-	private logJson(json: any) {
-		// TODO: Check if logging setting is on
-		this.log.appendLine(JSON.stringify(json, undefined, 4));
 	}
 	
 	getRegistry(): string | null {
@@ -66,7 +56,7 @@ export class WallyRegistryHelper {
 		const url = await this.git.getRegistryApiUrl();
 		if (url) {
 			const fullUrl = `${url}/v1/package-metadata/${author}/${name}`;
-			this.logPlaintext(`Looking for packages at ${fullUrl}`);
+			this.log.verboseText(`Looking for packages at ${fullUrl}`);
 			const response = await axios({
 				method: 'GET',
 				url: fullUrl,
