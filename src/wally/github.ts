@@ -67,7 +67,7 @@ export class WallyGithubHelper {
 			auth: authToken,
 		});
 		this.tok = authToken;
-		this.refreshRegistry();
+		this.invalidateCache();
 	}
 	
 	private async getRegistryTree(): Promise<WallyGithubRegistryTree | null> {
@@ -129,7 +129,7 @@ export class WallyGithubHelper {
 				return this.config;
 			}
 			// Fetch config contents blob from tree
-			this.log.verboseText("Fetching registry config...");
+			this.log.verboseText(`Fetching registry config for '${this.registryUser}/${this.registryRepo}'`);
 			const fileResponse = await this.kit.git.getBlob({
 				owner: this.registryUser,
 				repo: this.registryRepo,
@@ -147,7 +147,7 @@ export class WallyGithubHelper {
 		return null;
 	}
 	
-	async refreshRegistry() {
+	async invalidateCache() {
 		this.tree = null;
 		this.config = null;
 		this.nameCache = new Map();
@@ -161,7 +161,7 @@ export class WallyGithubHelper {
 				auth: token,
 			});
 			this.log.verboseText("Changed GitHub auth token");
-			await this.refreshRegistry();
+			await this.invalidateCache();
 		}
 	}
 	
@@ -235,6 +235,14 @@ export class WallyGithubHelper {
 		return null;
 	}
 	
+	async isValidAuthor(author: string): Promise<boolean | null> {
+		const authors = await this.getAuthorNames();
+		if (authors) {
+			return authors.includes(author);
+		}
+		return null;
+	}
+	
 	async isValidPackage(author: string, name: string): Promise<boolean | null> {
 		const names = await this.getPackageNames(author);
 		if (names) {
@@ -252,7 +260,7 @@ const helpers = new Map<string, WallyGithubHelper>();
 
 let authToken: string | null = null;
 
-export const getGitHubRegistryHelper = (registry: string) => {
+export const getRegistryGitHubHelper = (registry: string) => {
 	const cached = helpers.get(registry);
 	if (cached) {
 		return cached;
