@@ -1,10 +1,10 @@
 import * as vscode from "vscode";
 
-import { WallyLogHelper } from "./utils/logger";
+import { getGlobalLog, WallyLogHelper } from "./utils/logger";
 
 import { parseWallyManifest, WallyDependency } from "./wally/manifest";
 
-import { WallyRegistryHelper } from "./wally/registry";
+import { getRegistryHelper } from "./wally/registry";
 
 
 
@@ -37,20 +37,28 @@ const isWallyManifest = (document: vscode.TextDocument) => {
 
 export class WallyCompletionProvider implements vscode.CompletionItemProvider<vscode.CompletionItem> {
 	private log: WallyLogHelper;
-	private reg: WallyRegistryHelper;
 	
 	private enabled: boolean;
 	
-	constructor(logHelper: WallyLogHelper, registryHelper: WallyRegistryHelper) {
-		this.log = logHelper;
-		this.reg = registryHelper;
+	constructor() {
+		this.log = getGlobalLog();
 		this.enabled = true;
 	}
 	
-	private async providePackageAuthorCompletions(items: vscode.CompletionItem[], author: string) {
-		const authors = await this.reg.getPackageAuthors();
+	private async providePackageAuthorCompletions(registry: string, items: vscode.CompletionItem[], author: string) {
+		const authors = await getRegistryHelper(registry).getPackageAuthors();
 		if (authors) {
 			const filtered = authors.filter(authorName => authorName.startsWith(author));
+			if (this.log.isVerbose()) {
+				if (!author || author.length <= 0) {
+					this.log.verboseText(`Found ${authors.length} package authors (root)`);
+				} else if (filtered.length > 8) {
+					this.log.verboseText(`Found ${filtered.length} package authors (filtered)`);
+				} else {
+					this.log.verboseText(`Found package authors:`);
+					this.log.verboseJson(filtered);
+				}
+			}
 			for (const packageAuthor of filtered) {
 				const item = new vscode.CompletionItem(packageAuthor);
 				item.kind = vscode.CompletionItemKind.User;
@@ -59,10 +67,20 @@ export class WallyCompletionProvider implements vscode.CompletionItemProvider<vs
 		}
 	}
 	
-	private async providePackageNameCompletions(items: vscode.CompletionItem[], author: string, name: string) {
-		const names = await this.reg.getPackageNames(author);
+	private async providePackageNameCompletions(registry: string, items: vscode.CompletionItem[], author: string, name: string) {
+		const names = await getRegistryHelper(registry).getPackageNames(author);
 		if (names) {
 			const filtered = names.filter(packageName => packageName.startsWith(name));
+			if (this.log.isVerbose()) {
+				if (!name || name.length <= 0) {
+					this.log.verboseText(`Found ${names.length} package names for author '${author}' (root)`);
+				} else if (filtered.length > 8) {
+					this.log.verboseText(`Found ${filtered.length} package names for author '${author}' (filtered)`);
+				} else {
+					this.log.verboseText(`Found package names for author '${author}':`);
+					this.log.verboseJson(filtered);
+				}
+			}
 			for (const packageName of filtered) {
 				const item = new vscode.CompletionItem(packageName);
 				item.kind = vscode.CompletionItemKind.Enum;
@@ -71,10 +89,20 @@ export class WallyCompletionProvider implements vscode.CompletionItemProvider<vs
 		}
 	}
 	
-	private async providePackageVersionCompletions(items: vscode.CompletionItem[], author: string, name: string, version: string) {
-		const versions = await this.reg.getPackageVersions(author, name);
+	private async providePackageVersionCompletions(registry: string, items: vscode.CompletionItem[], author: string, name: string, version: string) {
+		const versions = await getRegistryHelper(registry).getPackageVersions(author, name);
 		if (versions) {
 			const filtered = versions.filter(packageVersion => packageVersion.startsWith(version));
+			if (this.log.isVerbose()) {
+				if (!name || name.length <= 0) {
+					this.log.verboseText(`Found ${versions.length} package versions for package '${author}/${name}' (root)`);
+				} else if (filtered.length > 8) {
+					this.log.verboseText(`Found ${filtered.length} package versions for package '${author}/${name}' (filtered)`);
+				} else {
+					this.log.verboseText(`Found package versions for package '${author}/${name}':`);
+					this.log.verboseJson(filtered);
+				}
+			}
 			for (const [index, packageVersion] of filtered.entries()) {
 				const item = new vscode.CompletionItem(packageVersion);
 				item.kind = vscode.CompletionItemKind.EnumMember;
@@ -97,10 +125,6 @@ export class WallyCompletionProvider implements vscode.CompletionItemProvider<vs
 			const items: vscode.CompletionItem[] = [];
 			const manifest = parseWallyManifest(document);
 			if (manifest) {
-				// Set the registry url for the github helper
-				if (this.reg.getRegistry() !== manifest.registry) {
-					this.reg.setRegistry(manifest.registry);
-				}
 				// Look for what dependency our cursor is currently inside
 				let found: WallyDependency | null = null;
 				for (const dependencyList of [
@@ -123,12 +147,27 @@ export class WallyCompletionProvider implements vscode.CompletionItemProvider<vs
 				if (found) {
 					if (found.hasFullAuthor) {
 						if (found.hasFullName) {
-							await this.providePackageVersionCompletions(items, found.author, found.name, found.version);
+							await this.providePackageVersionCompletions(
+								manifest.registry,
+								items,
+								found.author,
+								found.name,
+								found.version
+							);
 						} else {
-							await this.providePackageNameCompletions(items, found.author, found.name);
+							await this.providePackageNameCompletions(
+								manifest.registry,
+								items,
+								found.author,
+								found.name
+							);
 						}
 					} else {
-						await this.providePackageAuthorCompletions(items, found.author);
+						await this.providePackageAuthorCompletions(
+							manifest.registry,
+							items,
+							found.author
+						);
 					}
 				}
 			} else {

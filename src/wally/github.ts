@@ -2,13 +2,13 @@
 
 import { Octokit } from "@octokit/rest";
 
-import { WallyLogHelper } from "../utils/logger";
+import { getGlobalLog, WallyLogHelper } from "../utils/logger";
 
 
 
 
 
-const GITHUB_BASE_URL = "https://github.com/";
+export const GITHUB_BASE_URL = "https://github.com/";
 
 const USER_REPO_REGEX = new RegExp("([a-zA-Z\-]+)\/([a-zA-Z\-]+)");
 
@@ -43,15 +43,31 @@ export class WallyGithubHelper {
 	
 	private log: WallyLogHelper;
 	private kit: Octokit;
+	private tok: string | null;
 	
-	constructor(logHelper: WallyLogHelper) {
-		this.registryUser = null;
-		this.registryRepo = null;
+	constructor(registry: string, authToken: string | null) {
+		// Parse out user and repo from registry string
+		if (registry.startsWith(GITHUB_BASE_URL)) {
+			const stripped = registry.slice(GITHUB_BASE_URL.length);
+			const matches = USER_REPO_REGEX.exec(stripped);
+			if (matches) {
+				this.registryUser = matches[1];
+				this.registryRepo = matches[2];
+			} else {
+				throw new Error(`Invalid registry: ${registry}`);
+			}
+		} else {
+			throw new Error(`Unsupported registry: ${registry}`);
+		}
 		this.tree = null;
 		this.config = null;
 		this.nameCache = new Map();
-		this.log = logHelper;
-		this.kit = new Octokit();
+		this.log = getGlobalLog();
+		this.kit = new Octokit({
+			auth: authToken,
+		});
+		this.tok = authToken;
+		this.refreshRegistry();
 	}
 	
 	private async getRegistryTree(): Promise<WallyGithubRegistryTree | null> {
@@ -61,7 +77,7 @@ export class WallyGithubHelper {
 				return this.tree;
 			}
 			// Fetch tree from github
-			this.log.verboseText("Fetching registry tree...");
+			this.log.normalText(`Fetching registry tree for '${this.registryUser}/${this.registryRepo}'`);
 			const treeResponse = await this.kit.git.getTree({
 				owner: this.registryUser,
 				repo: this.registryRepo,
@@ -123,52 +139,29 @@ export class WallyGithubHelper {
 				const contents = Buffer.from(fileResponse.data.content, "base64");
 				const config = JSON.parse(contents.toString());
 				this.config = config;
-				this.log.verboseJson(config);
+				this.log.normalText(`Got registry config for '${this.registryUser}/${this.registryRepo}':`);
+				this.log.normalJson(config);
 				return config;
 			}
 		}
 		return null;
 	}
 	
-	private refreshRegistry() {
+	async refreshRegistry() {
 		this.tree = null;
 		this.config = null;
 		this.nameCache = new Map();
-		this.getRegistryConfig();
+		await this.getRegistryConfig();
 	}
 	
-	setAuthToken(token: string | null) {
-		this.kit = new Octokit({
-			auth: token,
-		});
-		this.refreshRegistry();
-	}
-	
-	getRegistry(): string | null {
-		if (this.registryUser && this.registryRepo) {
-			return `${this.registryUser}/${this.registryRepo}`;
-		}
-		return null;
-	}
-	
-	setRegistry(registry: string, force?: boolean) {
-		if (registry.startsWith(GITHUB_BASE_URL)) {
-			// Check if the registry is the same as the current one, if
-			// it is then we can skip setting it again, unless forced to
-			const stripped = registry.slice(GITHUB_BASE_URL.length);
-			if (stripped === this.getRegistry() && !force) {
-				return;
-			}
-			const matches = USER_REPO_REGEX.exec(stripped);
-			if (matches) {
-				this.registryUser = matches[1];
-				this.registryRepo = matches[2];
-				this.refreshRegistry();
-			} else {
-				throw new Error(`Invalid registry: ${registry}`);
-			}
-		} else {
-			throw new Error(`Unsupported registry: ${registry}`);
+	async setAuthToken(token: string | null) {
+		if (this.tok !== token) {
+			this.tok = token;
+			this.kit = new Octokit({
+				auth: token,
+			});
+			this.log.verboseText("Changed GitHub auth token");
+			await this.refreshRegistry();
 		}
 	}
 	
@@ -204,7 +197,6 @@ export class WallyGithubHelper {
 			}
 			if (authorSHA.length > 0) {
 				// Fetch package names
-				this.log.verboseText(`Fetching package names for '${lowered}'...`);
 				const treeResponse = await this.kit.git.getTree({
 					owner: this.registryUser,
 					repo: this.registryRepo,
@@ -234,4 +226,48 @@ export class WallyGithubHelper {
 		}
 		return null;
 	}
+	
+	async getRegistryFallbackUrls(): Promise<string[] | null> {
+		const config = await this.getRegistryConfig();
+		if (config && config.fallback_registries) {
+			return config.fallback_registries;
+		}
+		return null;
+	}
+	
+	async isValidPackage(author: string, name: string): Promise<boolean | null> {
+		const names = await this.getPackageNames(author);
+		if (names) {
+			return names.includes(name);
+		}
+		return null;
+	}
 }
+
+
+
+
+
+const helpers = new Map<string, WallyGithubHelper>();
+
+let authToken: string | null = null;
+
+export const getGitHubRegistryHelper = (registry: string) => {
+	const cached = helpers.get(registry);
+	if (cached) {
+		return cached;
+	} else {
+		const newHelper = new WallyGithubHelper(registry, authToken);
+		helpers.set(registry, newHelper);
+		return newHelper;
+	}
+};
+
+export const setGitHubAuthToken = (token: string | null) => {
+	if (authToken !== token) {
+		authToken = token;
+		for (const [_, registry] of helpers) {
+			registry.setAuthToken(token);
+		}
+	}
+};

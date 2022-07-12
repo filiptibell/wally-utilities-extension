@@ -11,19 +11,20 @@ export class WallyLogHelper implements vscode.Disposable {
 	private out: vscode.OutputChannel | null;
 	private lev: WallyLogLevel;
 	
-	constructor(logLevel: WallyLogLevel, outputInitialMessage?: boolean) {
+	constructor(logLevel?: WallyLogLevel) {
 		this.out = vscode.window.createOutputChannel("Wally", "jsonc");
-		this.lev = logLevel;
-		if (outputInitialMessage) {
-			this.out.appendLine(`// Started with log level '${this.lev}'`);
-		}
+		this.lev = logLevel || "Normal";
 	}
 	
-	private canOutputNormal() {
+	isQuiet() {
+		return this.lev === "Quiet";
+	}
+	
+	isNormal() {
 		return this.lev !== "Quiet";
 	}
 	
-	private canOutputVerbose() {
+	isVerbose() {
 		return this.lev === "Verbose";
 	}
 	
@@ -37,25 +38,25 @@ export class WallyLogHelper implements vscode.Disposable {
 	}
 	
 	normalText(txt: string) {
-		if (this.out && this.canOutputNormal()) {
+		if (this.out && this.isNormal()) {
 			this.out.appendLine(`// ${txt}`);
 		}
 	}
 	
 	normalJson(json: any) {
-		if (this.out && this.canOutputNormal()) {
+		if (this.out && this.isNormal()) {
 			this.out.appendLine(JSON.stringify(json, undefined, 4));
 		}
 	}
 	
 	verboseText(txt: string) {
-		if (this.out && this.canOutputVerbose()) {
+		if (this.out && this.isVerbose()) {
 			this.out.appendLine(`// ${txt}`);
 		}
 	}
 	
 	verboseJson(json: any) {
-		if (this.out && this.canOutputVerbose()) {
+		if (this.out && this.isVerbose()) {
 			this.out.appendLine(JSON.stringify(json, undefined, 4));
 		}
 	}
@@ -67,3 +68,18 @@ export class WallyLogHelper implements vscode.Disposable {
 		}
 	}
 }
+
+
+
+
+
+let globalLog: WallyLogHelper | null = null;
+
+export const getGlobalLog = () => {
+	if (globalLog) {
+		return globalLog;
+	} else {
+		globalLog = new WallyLogHelper();
+		return globalLog;
+	}
+};
