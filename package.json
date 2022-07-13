@@ -1,7 +1,7 @@
 {
-	"name": "wally-utils",
+	"name": "wally-utilities",
 	"displayName": "Wally Utilities",
-	"description": "Diagnostics & completions for wally manifests",
+	"description": "Diagnostics & completions for the Wally package manager",
 	"version": "0.0.1",
 	"author": {
 		"name": "Filip Tibell",
