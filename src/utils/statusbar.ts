@@ -12,9 +12,11 @@ import {
 
 
 interface WallyStatusBar extends vscode.StatusBarItem {
+	setIsEnabled: (enabled?: boolean) => void;
 	setInProgress: (inProgress?: boolean) => void;
 	setDependencyCount: (count?: number) => void;
 	setUpgradableCount: (count?: number) => void;
+	setWarningCount: (count?: number) => void;
 	setErroredCount: (count?: number) => void;
 }
 
@@ -31,26 +33,39 @@ wallyStatusBar.hide();
 
 let statusBarShown = false;
 
+let enabled = true;
+
 let inProgress = false;
 
 let numDependencies = 0;
 let numUpgradable = 0;
+let numWarnings = 0;
 let numErrored = 0;
 
 const updateStatusBar = () => {
+	if (!enabled) {
+		if (statusBarShown !== false) {
+			statusBarShown = false;
+			wallyStatusBar.hide();
+		}
+		return;
+	}
 	if (inProgress) {
-		wallyStatusBar.text = `${EMOJI_UNKNOWN} Wally`;
+		wallyStatusBar.text = `Wally - ${EMOJI_UNKNOWN}`;
 		if (statusBarShown !== true) {
 			statusBarShown = true;
 			wallyStatusBar.show();
 		}
 	} else if (numDependencies > 0) {
-		let text = `${EMOJI_OK} Wally`;
+		let text = `Wally - ${EMOJI_OK}`;
 		if (numErrored > 0) {
-			text = `${EMOJI_ERROR} Wally - ${numErrored} package errors`;
-			text = text.replace("1 package errors", "1 package error");
+			text = `Wally - ${numErrored} errors ${EMOJI_ERROR}`;
+			text = text.replace("1 errors", "1 error");
+		} else if (numWarnings > 0) {
+			text = `Wally - ${numWarnings} warnings ${EMOJI_UPGRADE}`;
+			text = text.replace("1 warnings", "1 warning");
 		} else if (numUpgradable > 0) {
-			text = `${EMOJI_UPGRADE} Wally - ${numUpgradable} packages upgradable`;
+			text = `Wally - ${numUpgradable} upgradable ${EMOJI_UPGRADE}`;
 		}
 		wallyStatusBar.text = text;
 		if (statusBarShown !== true) {
@@ -68,6 +83,14 @@ const updateStatusBar = () => {
 
 
 
+
+wallyStatusBar.setIsEnabled = (isEnabled?: boolean) => {
+	const state = isEnabled !== false;
+	if (enabled !== state) {
+		enabled = state;
+		updateStatusBar();
+	}
+};
 
 wallyStatusBar.setInProgress = (inProgress?: boolean) => {
 	const inProgressStatus = inProgress === true;
@@ -89,6 +112,14 @@ wallyStatusBar.setUpgradableCount = (count?: number) => {
 	const uintUpgradable = Math.max(0, Math.round(count ?? 0));
 	if (numUpgradable !== uintUpgradable) {
 		numUpgradable = uintUpgradable;
+		updateStatusBar();
+	}
+};
+
+wallyStatusBar.setWarningCount = (count?: number) => {
+	const uintWarnings = Math.max(0, Math.round(count ?? 0));
+	if (numWarnings !== uintWarnings) {
+		numWarnings = uintWarnings;
 		updateStatusBar();
 	}
 };

@@ -17,3 +17,7 @@ Autocomplete is provided for package authors, names, and versions.
 - Incomplete dependency (Author / name / version is missing)
 - Invalid dependency (Author / package / version does not exist)
 - A newer version of a package is available
+
+#### Status bar
+
+A status bar in the bottom left will give hints depending on dependency diagnostics.

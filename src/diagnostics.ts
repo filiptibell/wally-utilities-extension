@@ -2,6 +2,8 @@ import * as vscode from "vscode";
 
 import { getGlobalLog, WallyLogHelper } from "./utils/logger";
 
+import { wallyStatusBar } from "./utils/statusbar";
+
 import { WallyFilesystemWatcher } from "./wally/watcher";
 
 import { getRegistryHelper } from "./wally/registry";
@@ -121,6 +123,42 @@ const diagnoseDependency = async (
 
 
 
+const countErrorDiagnostics = (diagnostics: vscode.Diagnostic[]) => {
+	let total = 0;
+	for (const diagnostic of diagnostics) {
+		const code = diagnostic.code?.toString();
+		if (code && code.startsWith("W-1")) {
+			total += 1;
+		}
+	}
+	return total;
+};
+
+const countWarningDiagnostics = (diagnostics: vscode.Diagnostic[]) => {
+	let total = 0;
+	for (const diagnostic of diagnostics) {
+		const code = diagnostic.code?.toString();
+		if (code && code.startsWith("W-2")) {
+			total += 1;
+		}
+	}
+	return total;
+};
+
+const countUpgradeDiagnostics = (diagnostics: vscode.Diagnostic[]) => {
+	let total = 0;
+	for (const diagnostic of diagnostics) {
+		if (diagnostic.code === "W-301") {
+			total += 1;
+		}
+	}
+	return total;
+};
+
+
+
+
+
 export class WallyDiagnosticsProvider implements vscode.Disposable {
 	private log: WallyLogHelper;
 	private col: vscode.DiagnosticCollection;
@@ -182,6 +220,8 @@ export class WallyDiagnosticsProvider implements vscode.Disposable {
 								}
 							}
 						}
+						// Put status bar in "in progress" mode
+						wallyStatusBar.setInProgress(true);
 						// Wait for all diagnostic results to arrive and add them in
 						const diagnostics = await Promise.all(newDiags);
 						const filtered = diagnostics.filter(diag => !!diag) as vscode.Diagnostic[];
@@ -191,6 +231,13 @@ export class WallyDiagnosticsProvider implements vscode.Disposable {
 						} else if (filtered.length > 0) {
 							this.log.verboseText(`Diagnosed ${filtered.length} manifest issues`);
 						}
+						// Set new status bar status
+						wallyStatusBar.setErroredCount(countErrorDiagnostics(filtered));
+						wallyStatusBar.setWarningCount(countWarningDiagnostics(filtered));
+						wallyStatusBar.setUpgradableCount(countUpgradeDiagnostics(filtered));
+						wallyStatusBar.setDependencyCount(filtered.length);
+						// Move status bar out of "in progress" mode
+						wallyStatusBar.setInProgress(false);
 					}
 				});
 			} else {

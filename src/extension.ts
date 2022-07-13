@@ -6,6 +6,10 @@ import {
 } from "./utils/logger";
 
 import {
+	wallyStatusBar,
+} from "./utils/statusbar";
+
+import {
 	WallyFilesystemWatcher,
 } from "./wally/watcher";
 
@@ -22,6 +26,7 @@ import {
 	WALLY_COMPLETION_TRIGGERS,
 	WallyCompletionProvider,
 } from "./completion";
+
 import { WallyDiagnosticsProvider } from "./diagnostics";
 
 
@@ -33,6 +38,7 @@ export function activate(context: vscode.ExtensionContext) {
 	
 	// Set initial config stuff
 	setGitHubAuthToken(conf.get<string>("auth.token") || null);
+	wallyStatusBar.setIsEnabled(conf.get<boolean>("statusBar.enabled"));
 	
 	// Set initial log level for global log
 	const log = getGlobalLog();
@@ -61,17 +67,16 @@ export function activate(context: vscode.ExtensionContext) {
 	
 	// Listen to extension configuration changing
 	const configDisposable = vscode.workspace.onDidChangeConfiguration(event => {
+		log.normalText(`Changed extension config`);
 		if (event.affectsConfiguration("auth.token")) {
-			log.normalText("Changed auth token config");
 			setGitHubAuthToken(conf.get<string>("auth.token") || null);
+		} else if (event.affectsConfiguration("statusBar.enabled")) {
+			wallyStatusBar.setIsEnabled(conf.get<boolean>("statusBar.enabled"));
 		} else if (event.affectsConfiguration("completion.enabled")) {
-			log.normalText("Changed completion config");
 			compl.setEnabled(conf.get<boolean>("completion.enabled") !== false);
 		} else if (event.affectsConfiguration("diagnostics.enabled")) {
-			log.normalText("Changed diagnostics config");
 			diagsDisposable.setEnabled(conf.get<boolean>("diagnostics.enabled") !== false);
 		} else if (event.affectsConfiguration("log.level")) {
-			log.normalText("Changed logging config");
 			const logLevel = conf.get<WallyLogLevel>("log.level");
 			if (logLevel) {
 				log.setLevel(logLevel);
