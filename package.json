@@ -3,6 +3,15 @@
 	"displayName": "Wally Utilities",
 	"description": "Diagnostics & completions for wally manifests",
 	"version": "0.0.1",
+	"author": {
+		"name": "Filip Tibell",
+		"email": "filip.tibell@gmail.com",
+		"url": "https://github.com/filiptibell/"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/filiptibell/wally-utilities-extension.git"
+	},
 	"engines": {
 		"vscode": "^1.69.0"
 	},
