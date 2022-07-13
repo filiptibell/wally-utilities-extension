@@ -1,8 +1,8 @@
+import { satisfies as semverSatisfies } from "semver";
+
 import { GITHUB_BASE_URL } from "../utils/constants";
 
 import { getRegistryGitHubHelper } from "./github";
-
-import { getRegistryApiHelper } from "./api";
 
 
 
@@ -13,15 +13,6 @@ export class WallyRegistryHelper {
 	
 	constructor(registry: string) {
 		this.reg = registry;
-	}
-	
-	async invalidateCache() {
-		const hub = getRegistryGitHubHelper(this.reg);
-		const api = getRegistryApiHelper(this.reg);
-		await Promise.all([
-			hub.invalidateCache(),
-			api.invalidateCache(),
-		]);
 	}
 	
 	async getPackageAuthors(): Promise<string[] | null> {
@@ -75,18 +66,17 @@ export class WallyRegistryHelper {
 	
 	async getPackageVersions(author: string, name: string): Promise<string[] | null> {
 		// Look at direct registry
-		const api = getRegistryApiHelper(this.reg);
-		const versions = await api.getPackageVersions(author, name);
+		const hub = getRegistryGitHubHelper(this.reg);
+		const versions = await hub.getPackageVersions(author, name);
 		if (versions) {
 			return versions;
 		}
 		// Look at registry fallbacks
-		const hub = getRegistryGitHubHelper(this.reg);
 		const fallbackUrls = await hub.getRegistryFallbackUrls();
 		if (fallbackUrls) {
 			for (const fallbackUrl of fallbackUrls) {
-				const fallbackApi = getRegistryApiHelper(fallbackUrl);
-				const fallbackVersions = await fallbackApi.getPackageVersions(author, name);
+				const fallbackHub = getRegistryGitHubHelper(fallbackUrl);
+				const fallbackVersions = await fallbackHub.getPackageVersions(author, name);
 				if (fallbackVersions) {
 					return fallbackVersions;
 				}
@@ -159,6 +149,19 @@ export class WallyRegistryHelper {
 			return false;
 		}
 		// Something went wrong
+		return null;
+	}
+	
+	async isValidVersion(author: string, name: string, version: string): Promise<boolean | null> {
+		const availableVersions = await this.getPackageVersions(author, name);
+		if (availableVersions) {
+			for (const availableVersion of availableVersions) {
+				if (semverSatisfies(version, availableVersion)) {
+					return true;
+				}
+			}
+			return false;
+		}
 		return null;
 	}
 }
