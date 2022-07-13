@@ -33,9 +33,9 @@ If you are trying to use a private Wally registry, you can fix this error by set
 `;
 
 const tryErrorMessage = (message: string): boolean => {
-	const now = new Date().getTime();
+	const now = new Date().getTime() / 1000;
 	const last = ERROR_MESSAGE_TICKS.get(message) ?? 0;
-	if (now - last >= ERROR_MESSAGE_COOLDOWN) {
+	if ((now - last) >= ERROR_MESSAGE_COOLDOWN) {
 		ERROR_MESSAGE_TICKS.set(message, now);
 		return true;
 	}
