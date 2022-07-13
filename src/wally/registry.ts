@@ -1,4 +1,6 @@
-import { GITHUB_BASE_URL, getRegistryGitHubHelper } from "./github";
+import { GITHUB_BASE_URL } from "../utils/constants";
+
+import { getRegistryGitHubHelper } from "./github";
 
 import { getRegistryApiHelper } from "./api";
 

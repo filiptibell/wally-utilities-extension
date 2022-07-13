@@ -2,13 +2,13 @@
 
 import { Octokit } from "@octokit/rest";
 
+import { GITHUB_BASE_URL } from "../utils/constants";
+
 import { getGlobalLog, WallyLogHelper } from "../utils/logger";
 
 
 
 
-
-export const GITHUB_BASE_URL = "https://github.com/";
 
 const USER_REPO_REGEX = new RegExp("([a-zA-Z\-]+)\/([a-zA-Z\-]+)");
 

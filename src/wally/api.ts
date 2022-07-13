@@ -2,9 +2,11 @@ import axios from "axios";
 
 import { compare as compareSemver } from "semver";
 
+import { GITHUB_BASE_URL } from "../utils/constants";
+
 import { getGlobalLog, WallyLogHelper } from "../utils/logger";
 
-import { GITHUB_BASE_URL, getRegistryGitHubHelper } from "./github";
+import { getRegistryGitHubHelper } from "./github";
 
 
 
