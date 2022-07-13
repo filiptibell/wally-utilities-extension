@@ -1,8 +1,12 @@
 # Changelog
 
-## [Unreleased]
+## `[0.1.1]` - July 13, 2022
 
-## [0.1.0] - July 13, 2022
+### Changed
+
+- Improved handling of dependencies with version prefixes such as `^`, `~`, `=`, ...
+
+## `[0.1.0]` - July 13, 2022
 
 This is the initial release of the Wally Utilities extension! Yay!
 

@@ -2,7 +2,7 @@
 	"name": "wally-utilities",
 	"displayName": "Wally Utilities",
 	"description": "Diagnostics & completions for the Wally package manager",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"license": "MIT",
 	"publisher": "filiptibell",
 	"author": {
@@ -89,6 +89,7 @@
 		"@types/glob": "^7.2.0",
 		"@types/mocha": "^9.1.1",
 		"@types/node": "16.x",
+		"@types/semver": "^7.3.10",
 		"@types/vscode": "^1.69.0",
 		"@typescript-eslint/eslint-plugin": "^5.27.0",
 		"@typescript-eslint/parser": "^5.27.0",
@@ -98,10 +99,11 @@
 		"typescript": "^4.7.2"
 	},
 	"dependencies": {
-		"@octokit/rest": "^19.0.3",
 		"@octokit/request-error": "^3.0.0",
+		"@octokit/rest": "^19.0.3",
 		"@toml-tools/lexer": "^0.3.1",
 		"axios": "^0.27.2",
+		"semver": "^7.3.7",
 		"toml": "^3.0.0"
 	}
 }
