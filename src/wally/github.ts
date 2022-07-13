@@ -1,6 +1,10 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 
+import * as vscode from "vscode";
+
 import { Octokit } from "@octokit/rest";
+
+import { RequestError } from "@octokit/request-error";
 
 import { GITHUB_BASE_URL } from "../utils/constants";
 
@@ -11,6 +15,32 @@ import { getGlobalLog, WallyLogHelper } from "../utils/logger";
 
 
 const USER_REPO_REGEX = new RegExp("([a-zA-Z\-]+)\/([a-zA-Z\-]+)");
+
+const ERROR_MESSAGE_TICKS = new Map<string, number>();
+
+const ERROR_MESSAGE_COOLDOWN = 4;
+
+const ERROR_MESSAGE_TOO_MANY_REQUESTS = `
+Wally has reached the allowed request limit for GitHub.
+
+You can set a personal access token in the settings for the Wally extension to raise the request limit.
+`;
+
+const ERROR_MESSAGE_NOT_FOUND = `
+Wally was unable to find a package registry at 'https://github.com/<REGISTRY_NAME>'.
+
+If you are trying to use a private Wally registry, you can fix this error by setting a personal access token in the settings for the Wally extension.
+`;
+
+const tryErrorMessage = (message: string): boolean => {
+	const now = new Date().getTime();
+	const last = ERROR_MESSAGE_TICKS.get(message) ?? 0;
+	if (now - last >= ERROR_MESSAGE_COOLDOWN) {
+		ERROR_MESSAGE_TICKS.set(message, now);
+		return true;
+	}
+	return false;
+};
 
 
 
@@ -107,6 +137,18 @@ export class WallyGithubHelper {
 	
 	
 	
+	constructOctokit() {
+		return new Octokit({
+			auth: this.tok,
+			log: {
+				debug: () => { },
+				info: () => { },
+				warn: (message) => { this.log.verboseText(`[OCTOKIT] ${message}`); },
+				error: (message) => { this.log.normalText(`[OCTOKIT] ${message}`); }
+			}
+		});
+	}
+	
 	constructor(registry: string, authToken: string | null) {
 		// Parse out user and repo from registry string
 		if (registry.startsWith(GITHUB_BASE_URL)) {
@@ -126,17 +168,109 @@ export class WallyGithubHelper {
 		this.authorCache = new Map();
 		this.packageCache = new Map();
 		this.log = getGlobalLog();
-		this.kit = new Octokit({
-			auth: authToken,
-			log: {
-				debug: () => {},
-				info: () => {},
-				warn: (message) => { this.log.verboseText(`[OCTOKIT] ${message}`); },
-				error: (message) => { this.log.normalText(`[OCTOKIT] ${message}`); }
-			}
-		});
 		this.tok = authToken;
+		this.kit = this.constructOctokit();
 		this.invalidateCache();
+	}
+	
+	
+	
+	
+	
+	private handleUnhandledError(message: string) {
+		this.log.normalText(`GitHub request failed: '${message}'`);
+		if (tryErrorMessage(message)) {
+			vscode.window.showErrorMessage(`An unhandled error occurred for the Wally extension. This is a bug. Please report it: ${message}`);
+		}
+	}
+	
+	private handleGitHubErrorStatus(status: number, message?: string) {
+		if (message) {
+			this.log.normalText(`GitHub request failed: ${status} '${message}'`);
+		} else {
+			this.log.normalText(`GitHub request failed: ${status}`);
+		}
+		if (status === 403) {
+			// Too many requests :(
+			if (tryErrorMessage(ERROR_MESSAGE_TOO_MANY_REQUESTS)) {
+				vscode.window.showErrorMessage(ERROR_MESSAGE_TOO_MANY_REQUESTS, {}, "Open Settings").then(clicked => {
+					if (clicked) {
+						vscode.commands.executeCommand(
+							'workbench.action.openSettings',
+							'wally.auth.token'
+						);
+					}
+				});
+			}
+		} else if (status === 404) {
+			const regString = `${this.registryUser}/${this.registryRepo}`;
+			if (regString === "UpliftGames/wally-index") {
+				// This should never happen, but just in case,
+				// we shouldn't warn saying that the public wally
+				// index might be a private registry like we do below
+				return;
+			}
+			// Index not found, might be private
+			if (tryErrorMessage(ERROR_MESSAGE_NOT_FOUND)) {
+				const withReg = ERROR_MESSAGE_NOT_FOUND.replace("<REGISTRY_NAME>", regString);
+				vscode.window.showErrorMessage(withReg, {}, "Open Settings").then(clicked => {
+					if (clicked) {
+						vscode.commands.executeCommand(
+							'workbench.action.openSettings',
+							'wally.auth.token'
+						);
+					}
+				});
+			}
+		}
+	}
+	
+	private async getGitHubTree(sha: string) {
+		if (this.registryUser && this.registryRepo) {
+			return this.kit.git.getTree({
+				owner: this.registryUser,
+				repo: this.registryRepo,
+				tree_sha: sha,
+			}).then(res => {
+				if (res.status === 200) {
+					return res;
+				} else {
+					this.handleGitHubErrorStatus(res.status);
+					return null;
+				}
+			}).catch((err: RequestError) => {
+				this.handleGitHubErrorStatus(err.status);
+				return null;
+			});
+		}
+		return null;
+	}
+	
+	private async getGitHubBlob(sha: string) {
+		if (this.registryUser && this.registryRepo) {
+			return this.kit.git.getBlob({
+				owner: this.registryUser,
+				repo: this.registryRepo,
+				file_sha: sha,
+			}).then(res => {
+				if (res.status === 200) {
+					if (res.data.encoding === "base64") {
+						const buf = Buffer.from(res.data.content, "base64");
+						return buf.toString();
+					} else {
+						this.handleUnhandledError(`Encountered unknown encoding scheme ${res.data.encoding} in GitHub blob`);
+						return null;
+					}
+				} else {
+					this.handleGitHubErrorStatus(res.status);
+					return null;
+				}
+			}).catch((err: RequestError) => {
+				this.handleGitHubErrorStatus(err.status);
+				return null;
+			});
+		}
+		return null;
 	}
 	
 	
@@ -151,12 +285,8 @@ export class WallyGithubHelper {
 			}
 			// Fetch tree from github
 			this.log.normalText(`Fetching registry tree for '${this.registryUser}/${this.registryRepo}'`);
-			const treeResponse = await this.kit.git.getTree({
-				owner: this.registryUser,
-				repo: this.registryRepo,
-				tree_sha: "main",
-			});
-			if (treeResponse.status === 200) {
+			const treeResponse = await this.getGitHubTree("main");
+			if (treeResponse) {
 				// Create new tree info
 				const tree = {
 					authors: new Array<{
@@ -188,8 +318,6 @@ export class WallyGithubHelper {
 				// Set cache & return new tree
 				this.tree = tree;
 				return tree;
-			} else {
-				this.log.normalText(`Failed to fetch (${treeResponse.status})`);
 			}
 		}
 		return null;
@@ -215,12 +343,8 @@ export class WallyGithubHelper {
 			}
 			if (authorSHA.length > 0) {
 				// Fetch package names
-				const treeResponse = await this.kit.git.getTree({
-					owner: this.registryUser,
-					repo: this.registryRepo,
-					tree_sha: authorSHA,
-				});
-				if (treeResponse.status === 200) {
+				const treeResponse = await this.getGitHubTree(authorSHA);
+				if (treeResponse) {
 					const author: WallyGithubRegistryAuthor = {
 						name: lowered,
 						sha: authorSHA,
@@ -238,8 +362,6 @@ export class WallyGithubHelper {
 					}
 					this.authorCache.set(lowered, author);
 					return author;
-				} else {
-					this.log.normalText(`Failed to fetch (${treeResponse.status})`);
 				}
 			}
 		}
@@ -273,20 +395,13 @@ export class WallyGithubHelper {
 			if (packageSHA && packageSHA.length > 0) {
 				// Fetch package contents blob from tree
 				this.log.verboseText(`Fetching package blob for '${loweredAuthor}/${loweredPackage}' in '${this.registryUser}/${this.registryRepo}'`);
-				const fileResponse = await this.kit.git.getBlob({
-					owner: this.registryUser,
-					repo: this.registryRepo,
-					file_sha: packageSHA,
-				});
-				if (fileResponse.status === 200) {
-					// Get lines of content from file blob
-					const contentBuffer = Buffer.from(fileResponse.data.content, "base64");
-					const contentLines = contentBuffer.toString().split("\n");
+				const blob = await this.getGitHubBlob(packageSHA);
+				if (blob) {
 					// Parse each line as a package version object, oldest first
 					const versions: WallyGithubRegistryPackageVersion[] = [];
-					for (const contentLine of contentLines) {
-						const trimmed = contentLine.trim();
-						if (trimmed && trimmed.length > 0) {
+					for (const line of blob.split("\n")) {
+						const trimmed = line.trim();
+						if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
 							versions.push(JSON.parse(trimmed));
 						}
 					}
@@ -300,8 +415,6 @@ export class WallyGithubHelper {
 					};
 					cachedAuthor.set(loweredPackage, pack);
 					return pack;
-				} else {
-					this.log.normalText(`Failed to fetch (${fileResponse.status})`);
 				}
 			}
 		}
@@ -317,20 +430,13 @@ export class WallyGithubHelper {
 			}
 			// Fetch config contents blob from tree
 			this.log.verboseText(`Fetching registry config for '${this.registryUser}/${this.registryRepo}'`);
-			const fileResponse = await this.kit.git.getBlob({
-				owner: this.registryUser,
-				repo: this.registryRepo,
-				file_sha: tree.config.sha,
-			});
-			if (fileResponse.status === 200) {
-				const contents = Buffer.from(fileResponse.data.content, "base64");
-				const config = JSON.parse(contents.toString());
+			const blob = await this.getGitHubBlob(tree.config.sha);
+			if (blob) {
+				const config = JSON.parse(blob);
 				this.config = config;
 				this.log.normalText(`Got registry config for '${this.registryUser}/${this.registryRepo}':`);
 				this.log.normalJson(config);
 				return config;
-			} else {
-				this.log.normalText(`Failed to fetch (${fileResponse.status})`);
 			}
 		}
 		return null;
@@ -349,17 +455,11 @@ export class WallyGithubHelper {
 	}
 	
 	async setAuthToken(token: string | null) {
+		// TODO: Maybe we should be using device flow authentication instead
+		// of personal access tokens and have a nice integrated popup for it
 		if (this.tok !== token) {
 			this.tok = token;
-			this.kit = new Octokit({
-				auth: token,
-				log: {
-					debug: () => {},
-					info: () => {},
-					warn: (message) => { this.log.verboseText(`[OCTOKIT] ${message}`); },
-					error: (message) => { this.log.normalText(`[OCTOKIT] ${message}`); }
-				}
-			});
+			this.kit = this.constructOctokit();
 			this.log.verboseText("Changed GitHub auth token");
 			await this.invalidateCache();
 		}
