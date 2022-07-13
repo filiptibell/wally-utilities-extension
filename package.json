@@ -3,6 +3,7 @@
 	"displayName": "Wally Utilities",
 	"description": "Diagnostics & completions for the Wally package manager",
 	"version": "0.1.0",
+	"license": "MIT",
 	"author": {
 		"name": "Filip Tibell",
 		"email": "filip.tibell@gmail.com",
