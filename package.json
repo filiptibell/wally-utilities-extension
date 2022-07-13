@@ -4,6 +4,7 @@
 	"description": "Diagnostics & completions for the Wally package manager",
 	"version": "0.1.0",
 	"license": "MIT",
+	"publisher": "filiptibell",
 	"author": {
 		"name": "Filip Tibell",
 		"email": "filip.tibell@gmail.com",
