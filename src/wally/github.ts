@@ -490,7 +490,7 @@ export class WallyGithubHelper {
 	async getPackageVersions(authorName: string, packageName: string): Promise<string[] | null> {
 		const pack = await this.getRegistryPackage(authorName, packageName);
 		if (pack) {
-			return pack.versions.map(ver => ver.package.version);
+			return pack.versions.map(ver => ver.package.version).reverse();
 		}
 		return null;
 	}

@@ -1,6 +1,6 @@
-import { satisfies as semverSatisfies } from "semver";
-
 import { GITHUB_BASE_URL } from "../utils/constants";
+
+import { isSemverCompatible } from "../utils/semver";
 
 import { getRegistryGitHubHelper } from "./github";
 
@@ -156,11 +156,19 @@ export class WallyRegistryHelper {
 		const availableVersions = await this.getPackageVersions(author, name);
 		if (availableVersions) {
 			for (const availableVersion of availableVersions) {
-				if (semverSatisfies(version, availableVersion)) {
+				if (isSemverCompatible(version, availableVersion)) {
 					return true;
 				}
 			}
 			return false;
+		}
+		return null;
+	}
+	
+	async isOldVersion(author: string, name: string, version: string): Promise<boolean | null> {
+		const availableVersions = await this.getPackageVersions(author, name);
+		if (availableVersions) {
+			return !isSemverCompatible(version, availableVersions[0]);
 		}
 		return null;
 	}
