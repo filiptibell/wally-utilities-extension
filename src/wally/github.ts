@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/naming-convention */
-
 import * as vscode from "vscode";
 
 import { Octokit } from "@octokit/rest";
@@ -104,7 +102,9 @@ type WallyGithubRegistryPackage = {
 
 type WallyGithubRegistryConfig = {
 	api: string,
+	// eslint-disable-next-line @typescript-eslint/naming-convention
 	github_oauth_id: string,
+	// eslint-disable-next-line @typescript-eslint/naming-convention
 	fallback_registries?: string[],
 };
 
@@ -230,6 +230,7 @@ export class WallyGithubHelper {
 			return this.kit.git.getTree({
 				owner: this.registryUser,
 				repo: this.registryRepo,
+				// eslint-disable-next-line @typescript-eslint/naming-convention
 				tree_sha: sha,
 			}).then(res => {
 				if (res.status === 200) {
@@ -251,6 +252,7 @@ export class WallyGithubHelper {
 			return this.kit.git.getBlob({
 				owner: this.registryUser,
 				repo: this.registryRepo,
+				// eslint-disable-next-line @typescript-eslint/naming-convention
 				file_sha: sha,
 			}).then(res => {
 				if (res.status === 200) {
