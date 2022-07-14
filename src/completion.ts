@@ -17,10 +17,11 @@ export const WALLY_COMPLETION_SELECTOR = {
 };
 
 export const WALLY_COMPLETION_TRIGGERS = [
-	".",
-	"@",
-	"/",
 	'"',
+	"/",
+	"@",
+	".",
+	"-",
 ];
 
 
@@ -152,7 +153,7 @@ export class WallyCompletionProvider implements vscode.CompletionItemProvider<vs
 								items,
 								found.author,
 								found.name,
-								found.version
+								found.fullVersion
 							);
 						} else {
 							await this.providePackageNameCompletions(

@@ -2,6 +2,17 @@ import * as semver from "semver";
 
 const NUMBER_REGEX = new RegExp("^([0-9]+)");
 
+const satisfies = (availableVersion: string, desiredRange: string, desiredVersion: string) => {
+	if (
+		availableVersion === desiredVersion
+		|| semver.satisfies(availableVersion, desiredRange)
+		|| semver.satisfies(availableVersion, desiredVersion)
+	) {
+		return true;
+	}
+	return false;
+};
+
 export const isSemverCompatible = (desiredVersion: string, availableVersions: string | string[]) => {
 	let desiredRange = desiredVersion;
 	// Starts with number(s) = no prefix, the default for
@@ -11,12 +22,19 @@ export const isSemverCompatible = (desiredVersion: string, availableVersions: st
 		desiredRange = `^${desiredVersion}`;
 	}
 	if (typeof availableVersions === "string") {
-		return semver.satisfies(availableVersions, desiredRange);
+		if (satisfies(availableVersions, desiredRange, desiredVersion)) {
+			return true;
+		}
 	} else if (Array.isArray(availableVersions)) {
 		for (const available of availableVersions) {
-			if (semver.satisfies(available, desiredRange)) {
+			if (satisfies(available, desiredRange, desiredVersion)) {
 				return true;
 			}
 		}
 	}
+	return false;
+};
+
+export const coerceSemver = (semverRange: string) => {
+	return semver.coerce(semverRange)?.version || null;
 };

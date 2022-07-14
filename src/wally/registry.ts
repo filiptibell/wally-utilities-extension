@@ -152,23 +152,19 @@ export class WallyRegistryHelper {
 		return null;
 	}
 	
-	async isValidVersion(author: string, name: string, version: string): Promise<boolean | null> {
+	async isValidVersion(author: string, name: string, versionOrRange: string): Promise<boolean | null> {
 		const availableVersions = await this.getPackageVersions(author, name);
 		if (availableVersions) {
-			for (const availableVersion of availableVersions) {
-				if (isSemverCompatible(version, availableVersion)) {
-					return true;
-				}
-			}
-			return false;
+			return isSemverCompatible(versionOrRange, availableVersions);
 		}
 		return null;
 	}
 	
-	async isOldVersion(author: string, name: string, version: string): Promise<boolean | null> {
+	async isOldVersion(author: string, name: string, versionOrRange: string): Promise<boolean | null> {
 		const availableVersions = await this.getPackageVersions(author, name);
 		if (availableVersions) {
-			return !isSemverCompatible(version, availableVersions[0]);
+			const newestVersion = availableVersions[0];
+			return !isSemverCompatible(versionOrRange, newestVersion);
 		}
 		return null;
 	}

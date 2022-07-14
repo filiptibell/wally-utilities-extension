@@ -8,11 +8,11 @@ import { GITHUB_BASE_URL } from "../utils/constants";
 
 import { getGlobalLog, WallyLogHelper } from "../utils/logger";
 
+import { matchUserAndRepo } from "../utils/regex";
 
 
 
 
-const USER_REPO_REGEX = new RegExp("([a-zA-Z\-]+)\/([a-zA-Z\-]+)");
 
 const ERROR_MESSAGE_TICKS = new Map<string, number>();
 
@@ -153,10 +153,10 @@ export class WallyGithubHelper {
 		// Parse out user and repo from registry string
 		if (registry.startsWith(GITHUB_BASE_URL)) {
 			const stripped = registry.slice(GITHUB_BASE_URL.length);
-			const matches = USER_REPO_REGEX.exec(stripped);
+			const matches = matchUserAndRepo(stripped);
 			if (matches) {
-				this.registryUser = matches[1];
-				this.registryRepo = matches[2];
+				this.registryUser = matches[0];
+				this.registryRepo = matches[1];
 			} else {
 				throw new Error(`Invalid registry: ${registry}`);
 			}
@@ -537,26 +537,26 @@ export class WallyGithubHelper {
 
 
 
-const helpers = new Map<string, WallyGithubHelper>();
+const hubs = new Map<string, WallyGithubHelper>();
 
 let authToken: string | null = null;
 
 export const getRegistryGitHubHelper = (registry: string) => {
-	const cached = helpers.get(registry);
+	const cached = hubs.get(registry);
 	if (cached) {
 		return cached;
 	} else {
-		const newHelper = new WallyGithubHelper(registry, authToken);
-		helpers.set(registry, newHelper);
-		return newHelper;
+		const newHub = new WallyGithubHelper(registry, authToken);
+		hubs.set(registry, newHub);
+		return newHub;
 	}
 };
 
 export const setGitHubAuthToken = (token: string | null) => {
 	if (authToken !== token) {
 		authToken = token;
-		for (const [_, registry] of helpers) {
-			registry.setAuthToken(token);
+		for (const [_, hub] of hubs) {
+			hub.setAuthToken(token);
 		}
 	}
 };

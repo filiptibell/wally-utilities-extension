@@ -1,5 +1,12 @@
 # Changelog
 
+## `[0.1.2]` - July 14, 2022
+
+### Changed
+
+- Improved parsing & validation of dependencies
+- Improved support for packages that contain a version suffix like `1.2.3-alpha` or similar
+
 ## `[0.1.1]` - July 13, 2022
 
 ### Changed

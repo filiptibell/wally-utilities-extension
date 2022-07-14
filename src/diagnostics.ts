@@ -55,16 +55,9 @@ const createDependencyDiagnostic = (
 			mess = defaultMessage;
 		}
 	}
-	const rangeLength = (
-		dependency.author.length +
-		(dependency.hasFullAuthor ? 1 : 0) +
-		dependency.name.length +
-		(dependency.hasFullName ? 1 : 0) +
-		dependency.version.length
-	);
 	const rangeStart = new vscode.Position(
 		dependency.end.line,
-		dependency.end.character - rangeLength - 2
+		dependency.end.character - dependency.originalText.length
 	);
 	const range = new vscode.Range(rangeStart, dependency.end);
 	const item = new vscode.Diagnostic(range, mess, sev);
@@ -101,11 +94,11 @@ const diagnoseDependency = async (
 	if (dependency.version === "") {
 		return createDependencyDiagnostic(dependency, "W-203");
 	}
-	if (!(await registry.isValidVersion(dependency.author, dependency.name, dependency.version))) {
+	if (!(await registry.isValidVersion(dependency.author, dependency.name, dependency.fullVersion))) {
 		return createDependencyDiagnostic(dependency, "W-103");
 	}
 	// Check if there is a newer version
-	if (await registry.isOldVersion(dependency.author, dependency.name, dependency.version)) {
+	if (await registry.isOldVersion(dependency.author, dependency.name, dependency.fullVersion)) {
 		const message = DEFAULT_DIAGNOSTIC_MESSAGES.get("W-301");
 		if (message) {
 			const availableVersions = await registry.getPackageVersions(dependency.author, dependency.name);
