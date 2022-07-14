@@ -154,22 +154,24 @@ const countUpgradeDiagnostics = (diagnostics: vscode.Diagnostic[]) => {
 
 export class WallyDiagnosticsProvider implements vscode.Disposable {
 	private log: WallyLogHelper;
+	
 	private col: vscode.DiagnosticCollection;
-	private uris: Map<string, vscode.Uri>;
+	
+	private documents: Map<string, vscode.TextDocument>;
 	
 	private enabled: boolean;
 	
 	constructor(watcher: WallyFilesystemWatcher) {
 		this.log = getGlobalLog();
 		this.col = vscode.languages.createDiagnosticCollection("wally");
-		this.uris = new Map();
+		this.documents = new Map();
 		this.enabled = true;
 		// Listen to wally files
-		watcher.onDidCreate(uri => {
-			this.init(uri);
+		watcher.onDidCreate((uri, doc) => {
+			this.init(uri, doc);
 		});
-		watcher.onDidChange(uri => {
-			this.refresh(uri);
+		watcher.onDidChange((uri, doc) => {
+			this.refresh(uri, doc);
 		});
 		watcher.onDidDelete(uri => {
 			this.delete(uri);
@@ -177,62 +179,56 @@ export class WallyDiagnosticsProvider implements vscode.Disposable {
 	}
 	
 	dispose() {
-		this.uris.clear();
+		this.documents.clear();
 		this.col.dispose();
 	}
 	
-	async init(uri: vscode.Uri) {
-		if (!this.uris.has(uri.path)) {
-			this.uris.set(uri.path, uri);
-			this.refresh(uri);
+	async init(uri: vscode.Uri, doc: vscode.TextDocument) {
+		if (!this.documents.has(uri.path)) {
+			this.documents.set(uri.path, doc);
+			this.refresh(uri, doc);
 		}
 	}
 	
-	async refresh(uri: vscode.Uri) {
+	async refresh(uri: vscode.Uri, doc: vscode.TextDocument) {
 		// Check if this uri has been registered for diagnostics
-		if (this.uris.has(uri.path)) {
+		if (this.documents.has(uri.path)) {
 			if (this.enabled) {
-				vscode.workspace.openTextDocument(uri).then(async (doc) => {
-					// Check again in case the uri gets deleted
-					// while the text document is being opened
-					if (this.uris.has(uri.path)) {
-						// Diagnose all dependencies asynchronously
-						const newDiags = [];
-						const manifest = parseWallyManifest(doc);
-						if (manifest) {
-							for (const dependencyList of [
-								manifest.dependencies.shared,
-								manifest.dependencies.server,
-								manifest.dependencies.dev,
-							]) {
-								for (const dependency of dependencyList) {
-									newDiags.push(diagnoseDependency(
-										manifest,
-										dependency,
-									));
-								}
-							}
+				// Diagnose all dependencies asynchronously
+				const newDiags = [];
+				const manifest = parseWallyManifest(doc);
+				if (manifest) {
+					for (const dependencyList of [
+						manifest.dependencies.shared,
+						manifest.dependencies.server,
+						manifest.dependencies.dev,
+					]) {
+						for (const dependency of dependencyList) {
+							newDiags.push(diagnoseDependency(
+								manifest,
+								dependency,
+							));
 						}
-						// Put status bar in "in progress" mode
-						wallyStatusBar.setInProgress(true);
-						// Wait for all diagnostic results to arrive and add them in
-						const diagnostics = await Promise.all(newDiags);
-						const filtered = diagnostics.filter(diag => !!diag) as vscode.Diagnostic[];
-						this.col.set(uri, filtered);
-						if (filtered.length === 1) {
-							this.log.verboseText(`Diagnosed 1 manifest issue`);
-						} else if (filtered.length > 0) {
-							this.log.verboseText(`Diagnosed ${filtered.length} manifest issues`);
-						}
-						// Set new status bar status
-						wallyStatusBar.setErroredCount(countErrorDiagnostics(filtered));
-						wallyStatusBar.setWarningCount(countWarningDiagnostics(filtered));
-						wallyStatusBar.setUpgradableCount(countUpgradeDiagnostics(filtered));
-						wallyStatusBar.setDependencyCount(filtered.length);
-						// Move status bar out of "in progress" mode
-						wallyStatusBar.setInProgress(false);
 					}
-				});
+				}
+				// Put status bar in "in progress" mode
+				wallyStatusBar.setInProgress(true);
+				// Wait for all diagnostic results to arrive and add them in
+				const diagnostics = await Promise.all(newDiags);
+				const filtered = diagnostics.filter(diag => !!diag) as vscode.Diagnostic[];
+				this.col.set(uri, filtered);
+				if (filtered.length === 1) {
+					this.log.verboseText(`Diagnosed 1 manifest issue`);
+				} else if (filtered.length > 0) {
+					this.log.verboseText(`Diagnosed ${filtered.length} manifest issues`);
+				}
+				// Set new status bar status
+				wallyStatusBar.setErroredCount(countErrorDiagnostics(filtered));
+				wallyStatusBar.setWarningCount(countWarningDiagnostics(filtered));
+				wallyStatusBar.setUpgradableCount(countUpgradeDiagnostics(filtered));
+				wallyStatusBar.setDependencyCount(filtered.length);
+				// Move status bar out of "in progress" mode
+				wallyStatusBar.setInProgress(false);
 			} else {
 				this.col.delete(uri);
 			}
@@ -242,16 +238,16 @@ export class WallyDiagnosticsProvider implements vscode.Disposable {
 	}
 	
 	async delete(uri: vscode.Uri) {
-		if (this.uris.has(uri.path)) {
-			this.uris.delete(uri.path);
-			this.refresh(uri);
+		if (this.documents.has(uri.path)) {
+			this.documents.delete(uri.path);
+			this.col.delete(uri);
 		}
 	}
 	
 	async refreshAll() {
 		const promises = [];
-		for (const uri of this.uris.values()) {
-			promises.push(this.refresh(uri));
+		for (const doc of this.documents.values()) {
+			promises.push(this.refresh(doc.uri, doc));
 		}
 		return Promise.all(promises);
 	}

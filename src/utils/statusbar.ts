@@ -3,6 +3,7 @@ import * as vscode from "vscode";
 import {
 	EMOJI_OK,
 	EMOJI_ERROR,
+	EMOJI_WARNING,
 	EMOJI_UPGRADE,
 	EMOJI_UNKNOWN,
 } from "./constants";
@@ -51,21 +52,26 @@ const updateStatusBar = () => {
 		return;
 	}
 	if (inProgress) {
-		wallyStatusBar.text = `Wally - ${EMOJI_UNKNOWN}`;
+		wallyStatusBar.text = `${EMOJI_UNKNOWN} Wally`;
 		if (statusBarShown !== true) {
 			statusBarShown = true;
 			wallyStatusBar.show();
 		}
-	} else if (numDependencies > 0) {
-		let text = `Wally - ${EMOJI_OK}`;
+	} else if (
+		numDependencies > 0
+		|| numUpgradable > 0
+		|| numWarnings > 0
+		|| numErrored > 0
+	) {
+		let text = `${EMOJI_OK} Wally`;
 		if (numErrored > 0) {
-			text = `Wally - ${numErrored} errors ${EMOJI_ERROR}`;
+			text = `${EMOJI_ERROR} Wally - ${numErrored} errors`;
 			text = text.replace("1 errors", "1 error");
 		} else if (numWarnings > 0) {
-			text = `Wally - ${numWarnings} warnings ${EMOJI_UPGRADE}`;
+			text = `${EMOJI_WARNING} Wally - ${numWarnings} warnings`;
 			text = text.replace("1 warnings", "1 warning");
 		} else if (numUpgradable > 0) {
-			text = `Wally - ${numUpgradable} upgradable ${EMOJI_UPGRADE}`;
+			text = `${EMOJI_UPGRADE} Wally - ${numUpgradable} upgradable`;
 		}
 		wallyStatusBar.text = text;
 		if (statusBarShown !== true) {

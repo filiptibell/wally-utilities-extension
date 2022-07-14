@@ -1,87 +1,94 @@
 import * as vscode from "vscode";
 
-import { getGlobalLog, WallyLogHelper } from "../utils/logger";
 
 
 
 
-
-type WallyFilesystemCallback = (uri: vscode.Uri) => Promise<void> | void;
-
-const WALLY_TOML_GLOB = "**/wally.toml";
+type WallyWatcherChangedCallback = (uri: vscode.Uri, doc: vscode.TextDocument) => Promise<void> | void;
+type WallyWatcherDeletedCallback = (uri: vscode.Uri) => Promise<void> | void;
 
 
 
 
 
 export class WallyFilesystemWatcher implements vscode.Disposable {
-	private log: WallyLogHelper;
+	private documents: Map<string, vscode.TextDocument> = new Map();
 	
-	private watcher: vscode.FileSystemWatcher;
-	
-	private files: Map<string, vscode.Uri> = new Map();
-	
-	private listenersCreated: Set<WallyFilesystemCallback> = new Set();
-	private listenersChanged: Set<WallyFilesystemCallback> = new Set();
-	private listenersDeleted: Set<WallyFilesystemCallback> = new Set();
+	private listenersCreated: Set<WallyWatcherChangedCallback> = new Set();
+	private listenersChanged: Set<WallyWatcherChangedCallback> = new Set();
+	private listenersDeleted: Set<WallyWatcherDeletedCallback> = new Set();
 	
 	private disposed: boolean = false;
+	private disposables: vscode.Disposable[] = [];
 	
 	constructor() {
-		this.log = getGlobalLog();
-		const fileCreatedCallback = (uri: vscode.Uri) => {
-			if (uri.path.includes("Packages/_Index/")) {
+		const fileChangedCallback = (uri: vscode.Uri, doc: vscode.TextDocument) => {
+			if (!uri.path.endsWith("wally.toml")) {
 				return;
 			}
-			if (!this.files.has(uri.path)) {
-				this.files.set(uri.path, uri);
+			if (!this.documents.has(uri.path)) {
+				this.documents.set(uri.path, doc);
 				for (const listener of this.listenersCreated) {
-					listener(uri);
+					listener(uri, doc);
 				}
-			}
-		};
-		const fileChangedCallback = (uri: vscode.Uri) => {
-			if (this.files.has(uri.path)) {
+			} else {
 				for (const listener of this.listenersChanged) {
-					listener(uri);
+					listener(uri, doc);
 				}
 			}
 		};
 		const fileDeletedCallback = (uri: vscode.Uri) => {
-			if (this.files.has(uri.path)) {
-				this.files.delete(uri.path);
+			if (this.documents.has(uri.path)) {
+				this.documents.delete(uri.path);
 				for (const listener of this.listenersDeleted) {
 					listener(uri);
 				}
 			}
 		};
-		this.watcher = vscode.workspace.createFileSystemWatcher(WALLY_TOML_GLOB, false, false, false);
-		this.watcher.onDidCreate(fileCreatedCallback);
-		this.watcher.onDidChange(fileChangedCallback);
-		this.watcher.onDidDelete(fileDeletedCallback);
-		vscode.workspace.findFiles(WALLY_TOML_GLOB).then(files => {
-			for (const uri of files) {
-				fileCreatedCallback(uri);
+		this.disposables.push(vscode.window.onDidChangeActiveTextEditor(editor => {
+			if (editor) {
+				fileChangedCallback(
+					editor.document.uri,
+					editor.document
+				);
 			}
-		});
+		}));
+		this.disposables.push(vscode.workspace.onDidChangeTextDocument(event => {
+			if (event.contentChanges.length > 0) {
+				fileChangedCallback(
+					event.document.uri,
+					event.document
+				);
+			}
+		}));
+		this.disposables.push(vscode.workspace.onDidCloseTextDocument(event => {
+			fileDeletedCallback(event.uri);
+		}));
+		const initialEditor = vscode.window.activeTextEditor;
+		if (initialEditor) {
+			fileChangedCallback(
+				initialEditor.document.uri,
+				initialEditor.document
+			);
+		}
 	}
 	
-	onDidCreate(callback: WallyFilesystemCallback) {
+	onDidCreate(callback: WallyWatcherChangedCallback) {
 		if (!this.disposed) {
 			this.listenersCreated.add(callback);
-			for (const [_, uri] of this.files) {
-				callback(uri);
+			for (const [_, doc] of this.documents) {
+				callback(doc.uri, doc);
 			}
 		}
 	}
 	
-	onDidChange(callback: WallyFilesystemCallback) {
+	onDidChange(callback: WallyWatcherChangedCallback) {
 		if (!this.disposed) {
 			this.listenersChanged.add(callback);
 		}
 	}
 	
-	onDidDelete(callback: WallyFilesystemCallback) {
+	onDidDelete(callback: WallyWatcherDeletedCallback) {
 		if (!this.disposed) {
 			this.listenersDeleted.add(callback);
 		}
@@ -90,10 +97,15 @@ export class WallyFilesystemWatcher implements vscode.Disposable {
 	dispose() {
 		if (this.disposed !== true) {
 			this.disposed = true;
-			this.watcher.dispose();
+			// Remove listeners
 			this.listenersCreated.clear();
 			this.listenersChanged.clear();
 			this.listenersDeleted.clear();
+			// Dispose of everything
+			for (const disposable of this.disposables) {
+				disposable.dispose();
+			}
+			this.disposables = new Array();
 		}
 	}
 }

@@ -1,11 +1,18 @@
 # Changelog
 
-## `[0.1.2]` - July 14, 2022
+## `[0.2.0]` - July 14, 2022
 
 ### Changed
 
-- Improved parsing & validation of dependencies
-- Improved support for packages that contain a version suffix like `1.2.3-alpha` or similar
+- Diagnostics now update in realtime
+- Improved diagnostics performance & responsiveness
+
+### Fixed
+
+- Packages that contain numbers in their names no longer make strange errors
+- Packages that contain a version suffix like `1.2.3-alpha` no longer error
+- Diagnostics now always highlight the full dependency and not just a partial
+- Status bar is no longer flicker-y
 
 ## `[0.1.1]` - July 13, 2022
 
