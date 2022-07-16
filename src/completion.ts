@@ -177,6 +177,7 @@ export class WallyCompletionProvider implements vscode.CompletionItemProvider<vs
 			}
 			return items;
 		}
+		return null;
 	}
 	
 	setEnabled(enabled: boolean) {

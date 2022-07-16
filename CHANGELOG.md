@@ -7,6 +7,11 @@
 - Added diagnostics for `realm`, `version` and `registry` fields in `package`
 - Added more helpful error messages for most diagnostics like `Did you mean "x"?`
 
+### Changed
+
+- Extension now uses much less of the GitHub requests limit
+- Extension is now smaller in size and generally more responsive
+
 ## `[0.2.0]` - July 14, 2022
 
 ### Changed
