@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 
-import { matchDependencyPartial } from "../utils/regex";
+import { matchDependencyPartial } from "../utils/matching";
 
 import { parseTomlTokens } from "../utils/toml";
 
@@ -8,28 +8,37 @@ import { parseTomlTokens } from "../utils/toml";
 
 
 
-export type WallyDependency = {
+export type WallyManifestKeyValue = {
+	mock: boolean,
+	keyName: string,
+	cleanedText: string,
+	originalText: string,
+	originalStart: vscode.Position,
+	originalEnd: vscode.Position,
+	start: vscode.Position,
+	end: vscode.Position,
+};
+
+export type WallyManifestDependency = WallyManifestKeyValue & {
 	hasFullAuthor: boolean,
 	hasFullName: boolean,
 	author: string,
 	name: string,
 	version: string,
 	fullVersion: string,
-	cleanedText: string,
-	originalText: string,
-	start: vscode.Position,
-	end: vscode.Position,
 };
 
 export type WallyManifest = {
-	name: string,
-	version: string,
-	realm: string,
-	registry: string,
+	package: {
+		name: WallyManifestKeyValue,
+		version: WallyManifestKeyValue,
+		realm: WallyManifestKeyValue,
+		registry: WallyManifestKeyValue,
+	},
 	dependencies: {
-		shared: WallyDependency[],
-		server: WallyDependency[],
-		dev: WallyDependency[],
+		shared: WallyManifestDependency[],
+		server: WallyManifestDependency[],
+		dev: WallyManifestDependency[],
 	},
 };
 
@@ -46,21 +55,48 @@ const removeStringLiteralQuotes = (str: string): string => {
 	);
 };
 
-const parseDependency = (
+const mockKeyValueAssignment = (): WallyManifestKeyValue => {
+	const assignment = {
+		mock: true,
+		start: new vscode.Position(0, 0),
+		end: new vscode.Position(0, 0),
+		keyName: "",
+		cleanedText: "",
+		originalText: "",
+		originalStart: new vscode.Position(0, 0),
+		originalEnd: new vscode.Position(0, 0),
+	};
+	return assignment;
+};
+
+const parseKeyValueAssignment = (
+	key: string,
 	value: string,
 	start: vscode.Position,
 	end: vscode.Position
-): WallyDependency => {
+): WallyManifestKeyValue => {
 	const cleaned = removeStringLiteralQuotes(value);
-	const partial = matchDependencyPartial(cleaned);
-	const dep = {
+	const assignment = {
+		mock: false,
 		start,
 		end,
+		keyName: key,
 		cleanedText: cleaned,
 		originalText: value,
-		...partial
+		originalStart: new vscode.Position(end.line, end.character - value.length),
+		originalEnd: end,
 	};
-	return dep;
+	return assignment;
+};
+
+const parseDependency = (
+	key: string,
+	value: string,
+	start: vscode.Position,
+	end: vscode.Position
+): WallyManifestDependency => {
+	const assignment = parseKeyValueAssignment(key, value, start, end);
+	return {...assignment, ...matchDependencyPartial(assignment.cleanedText)};
 };
 
 
@@ -78,10 +114,12 @@ export const parseWallyManifest = (document: vscode.TextDocument) => {
 	}
 	// Create manifest info
 	const manifest: WallyManifest = {
-		name: "author/package",
-		version: "0.0.0",
-		realm: "shared",
-		registry: "https://github.com/UpliftGames/wally-index",
+		package: {
+			name: mockKeyValueAssignment(),
+			version: mockKeyValueAssignment(),
+			realm: mockKeyValueAssignment(),
+			registry: mockKeyValueAssignment(),
+		},
 		dependencies: {
 			shared: [],
 			server: [],
@@ -120,19 +158,27 @@ export const parseWallyManifest = (document: vscode.TextDocument) => {
 				&& nextToken.simp === "String"
 			) {
 				if (currentLabel === "package") {
-					// Package info
-					if (prevToken.text === "name") {
-						manifest.name = removeStringLiteralQuotes(nextToken.text);
-					} else if (prevToken.text === "version") {
-						manifest.version = removeStringLiteralQuotes(nextToken.text);
-					} else if (prevToken.text === "realm") {
-						manifest.realm = removeStringLiteralQuotes(nextToken.text);
-					} else if (prevToken.text === "registry") {
-						manifest.registry = removeStringLiteralQuotes(nextToken.text);
+					// Package info field
+					let packageKey: keyof WallyManifest["package"] | undefined;
+					if (
+						prevToken.text === "name"
+						|| prevToken.text === "version"
+						|| prevToken.text === "realm"
+						|| prevToken.text === "registry"
+					) {
+						packageKey = prevToken.text;
+					}
+					if (packageKey) {
+						manifest.package[packageKey] = parseKeyValueAssignment(
+							prevToken.text,
+							nextToken.text,
+							prevToken.start,
+							nextToken.end,
+						);
 					}
 				} else {
 					// Dependency
-					let list: WallyDependency[] = [];
+					let list: WallyManifestDependency[] = [];
 					if (currentLabel === "dependencies") {
 						list = manifest.dependencies.shared;
 					} else if (currentLabel === "server-dependencies") {
@@ -143,6 +189,7 @@ export const parseWallyManifest = (document: vscode.TextDocument) => {
 						continue;
 					}
 					list.push(parseDependency(
+						prevToken.text,
 						nextToken.text,
 						prevToken.start,
 						nextToken.end,

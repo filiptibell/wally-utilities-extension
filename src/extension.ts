@@ -1,6 +1,10 @@
 import * as vscode from "vscode";
 
 import {
+	PUBLIC_REGISTRY_URL,
+} from "./utils/constants";
+
+import {
 	WallyLogLevel,
 	getGlobalLog,
 } from "./utils/logger";
@@ -51,7 +55,7 @@ export function activate(context: vscode.ExtensionContext) {
 	const watcher = new WallyFilesystemWatcher();
 	
 	// Always cache the public wally registry authors for fast initial autocomplete
-	const publicRegistry = getRegistryHelper("https://github.com/UpliftGames/wally-index");
+	const publicRegistry = getRegistryHelper(PUBLIC_REGISTRY_URL);
 	publicRegistry.getPackageAuthors();
 	
 	// Create completion provider

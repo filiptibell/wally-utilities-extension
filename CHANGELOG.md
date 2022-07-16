@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Added diagnostics for `realm`, `version` and `registry` fields in `package`
+- Added more helpful error messages for most diagnostics like `Did you mean "x"?`
+
 ## `[0.2.0]` - July 14, 2022
 
 ### Changed

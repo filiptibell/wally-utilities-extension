@@ -1,44 +1,146 @@
 import * as vscode from "vscode";
 
+import { PUBLIC_REGISTRY_URL } from "./utils/constants";
+
 import { getGlobalLog, WallyLogHelper } from "./utils/logger";
+
+import { isValidSemver } from "./utils/semver";
+
+import { matchClosestOption, getMatchDistance } from "./utils/matching";
 
 import { wallyStatusBar } from "./utils/statusbar";
 
 import { WallyFilesystemWatcher } from "./wally/watcher";
 
-import { getRegistryHelper } from "./wally/registry";
+import { getRegistryHelper, WallyRegistryHelper } from "./wally/registry";
 
 import {
 	parseWallyManifest,
 	WallyManifest,
-	WallyDependency,
+	WallyManifestDependency,
 } from "./wally/manifest";
 
 
 
 
 
+const VALID_REALMS = new Set(["shared", "server", "dev"]);
+
 const DEFAULT_DIAGNOSTIC_MESSAGES = new Map([
 	// Errors
-	["W-101", "Invalid package author"],
-	["W-102", "Invalid package name"],
-	["W-103", "Invalid package version"],
+	["W-101", "Invalid package author.\nDid you mean `<PACKAGE_AUTHOR>`?"],
+	["W-102", "Invalid package name.\nDid you mean `<PACKAGE_NAME>`?"],
+	["W-103", "Invalid package version.\nDid you mean `<VERSION_IDENTIFIER>`?"],
+	["W-104", "Invalid package realm.\nDid you mean `<REALM_NAME>`?"],
+	["W-105", "Invalid package registry.\nDid you mean `<REGISTRY_NAME>`?"],
 	// Warnings
-	["W-201", "Missing package author"],
-	["W-202", "Missing package name"],
-	["W-203", "Missing package version"],
+	["W-201", "Missing package author."],
+	["W-202", "Missing package name."],
+	["W-203", "Missing package version."],
+	["W-204", "Missing package realm."],
+	["W-205", "Missing package registry."],
 	// Information
-	["W-301", "A newer package version is available: `<PACKAGE_VERSION>`"],
+	["W-301", "A newer package version is available.\nThe latest version is `<PACKAGE_VERSION>`."],
 ]);
 
 
 
 
 
-const createDependencyDiagnostic = (
-	dependency: WallyDependency,
+
+
+
+
+
+const getManifestRegistryHelper = async (manifest: WallyManifest) => {
+	try {
+		const registry = getRegistryHelper(manifest.package.registry.cleanedText);
+		await registry.getPackageAuthors();
+		return registry;
+	} catch (_) {
+		return null;
+	}
+};
+
+const getClosestRealmName = (realm: string) => {
+	const options = new Array<string>();
+	for (const option of VALID_REALMS) {
+		options.push(option);
+	}
+	return matchClosestOption(realm, options, "shared");
+};
+
+const getClosestRegistryName = (registry: string) => {
+	if (
+		registry.length <= 0
+		|| PUBLIC_REGISTRY_URL.startsWith(registry)
+		|| getMatchDistance(registry, PUBLIC_REGISTRY_URL.slice(0, registry.length)) <= 0.25
+	) {
+		return PUBLIC_REGISTRY_URL;
+	}
+	return undefined;
+};
+
+const getClosestPackageAuthor = async (
+	registry: WallyRegistryHelper,
+	author: string
+): Promise<string | undefined> => {
+	const authors = await registry.getPackageAuthors();
+	if (authors) {
+		const result = matchClosestOption(author, authors, author);
+		if (result !== author) {
+			return result;
+		}
+	}
+	return undefined;
+};
+
+const getClosestPackageName = async (
+	registry: WallyRegistryHelper,
+	author: string,
+	name: string
+): Promise<string | undefined> => {
+	const names = await registry.getPackageNames(author);
+	if (names) {
+		const result = matchClosestOption(name, names, name);
+		if (result !== name) {
+			return result;
+		}
+	}
+	return undefined;
+};
+
+const getClosestPackageVersion = async (
+	registry: WallyRegistryHelper,
+	author: string,
+	name: string,
+	version: string
+): Promise<string | undefined> => {
+	const versions = await registry.getPackageVersions(author, name);
+	if (versions) {
+		const result = matchClosestOption(version, versions, version);
+		if (result !== version) {
+			return result;
+		}
+	}
+	return undefined;
+};
+
+
+
+
+
+
+
+
+
+
+const createDiagnostic = (
+	start: vscode.Position,
+	end: vscode.Position,
 	code: string,
-	message?: string
+	pattern?: string,
+	replacement?: string,
 ) => {
 	let sev = vscode.DiagnosticSeverity.Error;
 	if (code.startsWith("W-2")) {
@@ -48,18 +150,25 @@ const createDependencyDiagnostic = (
 	} else if (code.startsWith("W-4")) {
 		sev = vscode.DiagnosticSeverity.Hint;
 	}
-	let mess = message ?? sev.toString();
-	if (!message || message.length <= 0) {
-		const defaultMessage = DEFAULT_DIAGNOSTIC_MESSAGES.get(code);
-		if (defaultMessage) {
-			mess = defaultMessage;
-		}
+	let mess = sev.toString();
+	const defaultMessage = DEFAULT_DIAGNOSTIC_MESSAGES.get(code);
+	if (defaultMessage) {
+		mess = defaultMessage;
 	}
-	const rangeStart = new vscode.Position(
-		dependency.end.line,
-		dependency.end.character - dependency.originalText.length
-	);
-	const range = new vscode.Range(rangeStart, dependency.end);
+	if (
+		pattern
+		&& pattern.length > 0
+		&& replacement
+		&& replacement.length > 0
+	) {
+		mess = mess.replace(
+			pattern,
+			replacement
+		);
+	} else {
+		mess = mess.split("\n")[0];
+	}
+	const range = new vscode.Range(start, end);
 	const item = new vscode.Diagnostic(range, mess, sev);
 	if (code) {
 		item.code = code;
@@ -67,50 +176,114 @@ const createDependencyDiagnostic = (
 	return item;
 };
 
+const createDependencyDiagnostic = (
+	dependency: WallyManifestDependency,
+	code: string,
+	pattern?: string,
+	replacement?: string,
+) => {
+	return createDiagnostic(
+		dependency.originalStart,
+		dependency.originalEnd,
+		code,
+		pattern,
+		replacement,
+	);
+};
+
+
+
+
+
+
 
 
 
 
 const diagnoseDependency = async (
 	manifest: WallyManifest,
-	dependency: WallyDependency
+	dependency: WallyManifestDependency
 ): Promise<vscode.Diagnostic | null> => {
-	const registry = getRegistryHelper(manifest.registry);
+	const registry = await getManifestRegistryHelper(manifest);
+	if (!registry) {
+		return null;
+	}
 	// Check package author validity
 	if (!dependency.hasFullAuthor && !(await registry.isValidAuthor(dependency.author))) {
 		return createDependencyDiagnostic(dependency, "W-201");
 	}
 	if (!(await registry.isValidAuthor(dependency.author))) {
-		return createDependencyDiagnostic(dependency, "W-101");
+		const closest = await getClosestPackageAuthor(registry, dependency.author);
+		return createDependencyDiagnostic(dependency, "W-101", "<PACKAGE_AUTHOR>", closest);
 	}
 	// Check package name validity
 	if (!dependency.hasFullName && !(await registry.isValidPackage(dependency.author, dependency.name))) {
 		return createDependencyDiagnostic(dependency, "W-202");
 	}
 	if (!(await registry.isValidPackage(dependency.author, dependency.name))) {
-		return createDependencyDiagnostic(dependency, "W-102");
+		const closest = await getClosestPackageName(registry, dependency.author, dependency.name);
+		return createDependencyDiagnostic(dependency, "W-102", "<PACKAGE_NAME>", closest);
 	}
 	// Check package version validity
 	if (dependency.version === "") {
 		return createDependencyDiagnostic(dependency, "W-203");
 	}
 	if (!(await registry.isValidVersion(dependency.author, dependency.name, dependency.fullVersion))) {
-		return createDependencyDiagnostic(dependency, "W-103");
+		const closest = await getClosestPackageVersion(registry, dependency.author, dependency.name, dependency.version);
+		return createDependencyDiagnostic(dependency, "W-103", "<VERSION_IDENTIFIER>", closest);
 	}
 	// Check if there is a newer version
 	if (await registry.isOldVersion(dependency.author, dependency.name, dependency.fullVersion)) {
-		const message = DEFAULT_DIAGNOSTIC_MESSAGES.get("W-301");
-		if (message) {
-			const availableVersions = await registry.getPackageVersions(dependency.author, dependency.name);
-			if (availableVersions && availableVersions.length > 0) {
-				const withLatestVersion = message.replace("<PACKAGE_VERSION>", availableVersions[0]);
-				return createDependencyDiagnostic(dependency, "W-301", withLatestVersion);
-			}
-		}
+		const availableVersions = await registry.getPackageVersions(dependency.author, dependency.name);
+		const latestVersion = availableVersions ? availableVersions[0] : undefined;
+		return createDependencyDiagnostic(dependency, "W-301", "<PACKAGE_VERSION>", latestVersion);
 	}
 	// No diagnostic, all is well (that we know of)
 	return null;
 };
+
+const diagnosePackageRealm = async (manifest: WallyManifest) => {
+	const realm = manifest.package.realm;
+	if (VALID_REALMS.has(realm.cleanedText)) {
+		return null;
+	}
+	return createDiagnostic(
+		realm.originalStart,
+		realm.originalEnd,
+		"W-104",
+		"<REALM_NAME>",
+		getClosestRealmName(realm.cleanedText)
+	);
+};
+
+const diagnosePackageRegistry = async (manifest: WallyManifest) => {
+	const registry = await getManifestRegistryHelper(manifest);
+	if (registry) {
+		return null;
+	}
+	const reg = manifest.package.registry;
+	return createDiagnostic(
+		reg.originalStart,
+		reg.originalEnd,
+		"W-105",
+		"<REGISTRY_NAME>",
+		getClosestRegistryName(reg.cleanedText)
+	);
+	return null;
+};
+
+const diagnosePackageVersion = async (manifest: WallyManifest) => {
+	const version = manifest.package.version;
+	if (isValidSemver(version.cleanedText)) {
+		return null;
+	}
+	return createDiagnostic(version.originalStart, version.originalEnd, "W-103");
+};
+
+
+
+
+
 
 
 
@@ -147,6 +320,11 @@ const countUpgradeDiagnostics = (diagnostics: vscode.Diagnostic[]) => {
 	}
 	return total;
 };
+
+
+
+
+
 
 
 
@@ -194,10 +372,15 @@ export class WallyDiagnosticsProvider implements vscode.Disposable {
 		// Check if this uri has been registered for diagnostics
 		if (this.documents.has(uri.path)) {
 			if (this.enabled) {
-				// Diagnose all dependencies asynchronously
+				// Diagnose everything asynchronously
 				const newDiags = [];
 				const manifest = parseWallyManifest(doc);
 				if (manifest) {
+					// Diagnose the basic package fields
+					newDiags.push(diagnosePackageRealm(manifest));
+					newDiags.push(diagnosePackageRegistry(manifest));
+					newDiags.push(diagnosePackageVersion(manifest));
+					// Diagnose all dependencies
 					for (const dependencyList of [
 						manifest.dependencies.shared,
 						manifest.dependencies.server,

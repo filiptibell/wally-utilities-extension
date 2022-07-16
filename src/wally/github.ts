@@ -4,11 +4,14 @@ import { Octokit } from "@octokit/rest";
 
 import { RequestError } from "@octokit/request-error";
 
-import { GITHUB_BASE_URL } from "../utils/constants";
+import {
+	GITHUB_BASE_URL,
+	PUBLIC_REGISTRY_USER_AND_REPO,
+} from "../utils/constants";
 
 import { getGlobalLog, WallyLogHelper } from "../utils/logger";
 
-import { matchUserAndRepo } from "../utils/regex";
+import { matchUserAndRepo } from "../utils/matching";
 
 
 
@@ -29,6 +32,11 @@ Wally was unable to find a package registry at 'https://github.com/<REGISTRY_NAM
 
 If you are trying to use a private Wally registry, you can fix this error by setting a personal access token in the settings for the Wally extension.
 `;
+
+const authTokenIsEmpty = () => {
+	const conf = vscode.workspace.getConfiguration('wally');
+	return !conf.get<string>("auth.token");
+};
 
 const tryErrorMessage = (message: string): boolean => {
 	const now = new Date().getTime() / 1000;
@@ -192,7 +200,7 @@ export class WallyGithubHelper {
 		}
 		if (status === 403) {
 			// Too many requests :(
-			if (tryErrorMessage(ERROR_MESSAGE_TOO_MANY_REQUESTS)) {
+			if (authTokenIsEmpty() && tryErrorMessage(ERROR_MESSAGE_TOO_MANY_REQUESTS)) {
 				vscode.window.showErrorMessage(ERROR_MESSAGE_TOO_MANY_REQUESTS, {}, "Open Settings").then(clicked => {
 					if (clicked) {
 						vscode.commands.executeCommand(
@@ -204,14 +212,14 @@ export class WallyGithubHelper {
 			}
 		} else if (status === 404) {
 			const regString = `${this.registryUser}/${this.registryRepo}`;
-			if (regString === "UpliftGames/wally-index") {
+			if (regString === PUBLIC_REGISTRY_USER_AND_REPO) {
 				// This should never happen, but just in case,
 				// we shouldn't warn saying that the public wally
 				// index might be a private registry like we do below
 				return;
 			}
 			// Index not found, might be private
-			if (tryErrorMessage(ERROR_MESSAGE_NOT_FOUND)) {
+			if (authTokenIsEmpty() && tryErrorMessage(ERROR_MESSAGE_NOT_FOUND)) {
 				const withReg = ERROR_MESSAGE_NOT_FOUND.replace("<REGISTRY_NAME>", regString);
 				vscode.window.showErrorMessage(withReg, {}, "Open Settings").then(clicked => {
 					if (clicked) {

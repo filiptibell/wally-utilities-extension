@@ -38,3 +38,7 @@ export const isSemverCompatible = (desiredVersion: string, availableVersions: st
 export const coerceSemver = (semverRange: string) => {
 	return semver.coerce(semverRange)?.version || null;
 };
+
+export const isValidSemver = (semverRange: string) => {
+	return semver.valid(semverRange) ? true : false;
+};

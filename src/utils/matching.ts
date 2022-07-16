@@ -1,5 +1,7 @@
 import { coerceSemver } from "./semver";
 
+import { get as getLevenDistance } from "fast-levenshtein";
+
 export type DependencyPartial = {
 	author: string,
 	name: string,
@@ -103,4 +105,47 @@ export const matchFullDependency = (str: string) => {
 		}
 	}
 	return null;
+};
+
+
+
+
+
+export const matchClosestOption = (input: string, options: string[], defaultValue: string): string => {
+	if (input.length > 0) {
+		// Check starting chars first because it is usually more accurate
+		const lowered = input.toLowerCase();
+		for (const option of options) {
+			const minLen = Math.min(
+				input.length,
+				option.length,
+			);
+			if (
+				lowered.slice(0, minLen)
+				=== option.slice(0, minLen)
+			) {
+				return option;
+			}
+		}
+		// Fallback to levenshtein distance for misspelling
+		const sorted = options.sort((a, b) => {
+			const da = getLevenDistance(a, input);
+			const db = getLevenDistance(b, input);
+			if (da > db) {
+				return 1;
+			} else if (da < db) {
+				return -1;
+			} else {
+				return 0;
+			}
+		});
+		return sorted[0];
+	}
+	return defaultValue;
+};
+
+export const getMatchDistance = (a: string, b: string): number => {
+	const distance = getLevenDistance(a, b);
+	const longest = Math.max(a.length, b.length);
+	return Math.max(0, Math.min(distance / longest, 1));
 };

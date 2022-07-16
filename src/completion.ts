@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 
 import { getGlobalLog, WallyLogHelper } from "./utils/logger";
 
-import { parseWallyManifest, WallyDependency } from "./wally/manifest";
+import { parseWallyManifest, WallyManifestDependency } from "./wally/manifest";
 
 import { getRegistryHelper } from "./wally/registry";
 
@@ -127,7 +127,7 @@ export class WallyCompletionProvider implements vscode.CompletionItemProvider<vs
 			const manifest = parseWallyManifest(document);
 			if (manifest) {
 				// Look for what dependency our cursor is currently inside
-				let found: WallyDependency | null = null;
+				let found: WallyManifestDependency | null = null;
 				for (const dependencyList of [
 					manifest.dependencies.shared,
 					manifest.dependencies.server,
@@ -146,10 +146,11 @@ export class WallyCompletionProvider implements vscode.CompletionItemProvider<vs
 				}
 				// Add completion items for the found dependency
 				if (found) {
+					const registryUrl = manifest.package.registry.cleanedText;
 					if (found.hasFullAuthor) {
 						if (found.hasFullName) {
 							await this.providePackageVersionCompletions(
-								manifest.registry,
+								registryUrl,
 								items,
 								found.author,
 								found.name,
@@ -157,7 +158,7 @@ export class WallyCompletionProvider implements vscode.CompletionItemProvider<vs
 							);
 						} else {
 							await this.providePackageNameCompletions(
-								manifest.registry,
+								registryUrl,
 								items,
 								found.author,
 								found.name
@@ -165,7 +166,7 @@ export class WallyCompletionProvider implements vscode.CompletionItemProvider<vs
 						}
 					} else {
 						await this.providePackageAuthorCompletions(
-							manifest.registry,
+							registryUrl,
 							items,
 							found.author
 						);

@@ -9,11 +9,12 @@ Features in `wally.toml`:
 * Autocomplete for dependencies.
 * Diagnostics for dependencies, including:
 	- Incomplete dependency (Author / name / version is missing)
-	- Invalid dependency (Author / package / version does not exist)
+	- Invalid dependency (Author / name / version does not exist)
 	- A newer version of a package is available
 
-* **(TODO)** Validation for `package` info fields / settings.
-* **(TODO)** The latest version of a package is displayed next to it in dependencies.
+* Validation for `package` info fields / settings.
+* User-friendly hints for errors like `Did you mean "x"`, wherever applicable.
+* **(TODO)** Quick actions for fixing diagnostics.
 
 ----
 
