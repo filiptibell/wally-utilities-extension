@@ -1,6 +1,10 @@
 # Wally Utilities
 
+![Visual Studio Marketplace Badge](https://vsmarketplacebadge.apphb.com/version/filiptibell.wally-utilities.svg)
+
 This VSCode extension provides some nice-to-haves when using the [Wally](https://wally.run) package manager.
+
+The extension can be downloaded from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=filiptibell.wally-utilities).
 
 ----
 
