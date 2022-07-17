@@ -1,10 +1,10 @@
 import * as vscode from "vscode";
 
-import { getGlobalLog, WallyLogHelper } from "./utils/logger";
+import { getGlobalLog, WallyLogHelper } from "../utils/logger";
 
-import { parseWallyManifest, WallyManifestDependency } from "./wally/manifest";
+import { parseWallyManifest, WallyManifestDependency } from "../wally/manifest";
 
-import { getRegistryHelper } from "./wally/registry";
+import { getRegistryHelper } from "../wally/registry";
 
 
 

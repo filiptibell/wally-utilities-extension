@@ -1,26 +1,26 @@
 import * as vscode from "vscode";
 
-import { PUBLIC_REGISTRY_URL } from "./utils/constants";
+import { PUBLIC_REGISTRY_URL } from "../utils/constants";
 
-import { getGlobalLog, WallyLogHelper } from "./utils/logger";
+import { getGlobalLog, WallyLogHelper } from "../utils/logger";
 
-import { isValidSemver } from "./utils/semver";
+import { isValidSemver } from "../utils/semver";
 
-import { matchClosestOption, getMatchDistance } from "./utils/matching";
+import { matchClosestOption, getMatchDistance } from "../utils/matching";
 
-import { wallyStatusBar } from "./utils/statusbar";
+import { wallyStatusBar } from "../utils/statusbar";
 
-import { WallyFilesystemWatcher } from "./wally/watcher";
+import { WallyFilesystemWatcher } from "../wally/watcher";
 
-import { getRealmCorrection, getRealmSection, WallyPackageRealm } from "./wally/base";
+import { getRealmCorrection, getRealmSection, WallyPackageRealm } from "../wally/base";
 
-import { getRegistryHelper, WallyRegistryHelper } from "./wally/registry";
+import { getRegistryHelper, WallyRegistryHelper } from "../wally/registry";
 
 import {
 	parseWallyManifest,
 	WallyManifest,
 	WallyManifestDependency,
-} from "./wally/manifest";
+} from "../wally/manifest";
 
 
 

@@ -25,15 +25,15 @@ import {
 	getRegistryHelper,
 } from "./wally/registry";
 
-import { } from "./commands";
+import { } from "./providers/commands";
 
 import {
 	WALLY_COMPLETION_SELECTOR,
 	WALLY_COMPLETION_TRIGGERS,
 	WallyCompletionProvider,
-} from "./completion";
+} from "./providers/completion";
 
-import { WallyDiagnosticsProvider } from "./diagnostics";
+import { WallyDiagnosticsProvider } from "./providers/diagnostics";
 
 
 
