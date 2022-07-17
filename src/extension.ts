@@ -69,8 +69,6 @@ export function activate(context: vscode.ExtensionContext) {
 	const diagsDisposable = new WallyDiagnosticsProvider(watcher);
 	diagsDisposable.setEnabled(conf.get<boolean>("diagnostics.enabled") !== false);
 	
-	// TODO: Create lens provider thing
-	
 	// Listen to extension configuration changing
 	const configDisposable = vscode.workspace.onDidChangeConfiguration(event => {
 		log.normalText(`Changed extension config`);
@@ -94,7 +92,6 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(complDisposable);
 	context.subscriptions.push(configDisposable);
 	context.subscriptions.push(diagsDisposable);
-	// TODO: Add lens provider thing
 }
 
 export function deactivate() { }
