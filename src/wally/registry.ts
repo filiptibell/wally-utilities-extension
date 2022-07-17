@@ -2,6 +2,8 @@ import { GITHUB_BASE_URL } from "../utils/constants";
 
 import { isSemverCompatible } from "../utils/semver";
 
+import { WallyGithubRegistryPackageVersion } from "./base";
+
 import { getRegistryGitHubHelper } from "./github";
 
 
@@ -85,6 +87,28 @@ export class WallyRegistryHelper {
 		// Nothing found
 		return null;
 	};
+	
+	async getFullPackageInfo(author: string, name: string, version: string): Promise<WallyGithubRegistryPackageVersion | null> {
+		// Look at direct registry
+		const hub = getRegistryGitHubHelper(this.reg);
+		const info = await hub.getPackageInfo(author, name, version);
+		if (info) {
+			return info;
+		}
+		// Look at registry fallbacks
+		const fallbackUrls = await hub.getRegistryFallbackUrls();
+		if (fallbackUrls) {
+			for (const fallbackUrl of fallbackUrls) {
+				const fallbackHub = getRegistryGitHubHelper(fallbackUrl);
+				const fallbackInfo = await fallbackHub.getPackageInfo(author, name, version);
+				if (fallbackInfo) {
+					return fallbackInfo;
+				}
+			}
+		}
+		// Nothing found
+		return null;
+	}
 	
 	async isValidAuthor(author: string): Promise<boolean | null> {
 		let anyNonNulls = false;

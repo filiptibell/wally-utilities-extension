@@ -11,9 +11,19 @@ import {
 	PUBLIC_REGISTRY_USER_AND_REPO,
 } from "../utils/constants";
 
+import { isSemverCompatible } from "../utils/semver";
+
 import { getGlobalLog, WallyLogHelper } from "../utils/logger";
 
 import { matchUserAndRepo } from "../utils/matching";
+
+import {
+	WallyGithubRegistryTree,
+	WallyGithubRegistryConfig,
+	WallyGithubRegistryAuthor,
+	WallyGithubRegistryPackage,
+	WallyGithubRegistryPackageVersion,
+} from "./base";
 
 
 
@@ -48,74 +58,6 @@ const tryErrorMessage = (message: string): boolean => {
 		return true;
 	}
 	return false;
-};
-
-
-
-
-
-
-
-
-
-
-type WallyGithubRegistryTree = {
-	authors: Array<{
-		name: string,
-		sha: string,
-	}>,
-	config: {
-		name: string,
-		sha: string,
-	},
-};
-
-type WallyGithubRegistryAuthor = {
-	name: string,
-	sha: string,
-	packages: Array<{
-		name: string,
-		sha: string,
-	}>,
-};
-
-type WallyGithubRegistryPackageVersion = {
-	package: {
-		name: string,
-		version: string,
-		registry: string,
-		realm: string,
-		description?: string,
-		license?: string,
-		authors: string[],
-		include?: string[],
-		exclude?: string[],
-	},
-	place?: {
-		["shared-packages"]?: string,
-		["server-packages"]?: string,
-		["dev-packages"]?: string,
-	},
-	["dependencies"]: {[author: string]: string},
-	["server-dependencies"]: {[author: string]: string},
-	["dev-dependencies"]: {[author: string]: string},
-};
-
-type WallyGithubRegistryPackage = {
-	author: {
-		name: string,
-		sha: string,
-	},
-	// Sorted oldest-first
-	versions: Array<WallyGithubRegistryPackageVersion>,
-};
-
-type WallyGithubRegistryConfig = {
-	api: string,
-	// eslint-disable-next-line @typescript-eslint/naming-convention
-	github_oauth_id: string,
-	// eslint-disable-next-line @typescript-eslint/naming-convention
-	fallback_registries?: string[],
 };
 
 
@@ -507,6 +449,18 @@ export class WallyGithubHelper {
 		const pack = await this.getRegistryPackage(authorName, packageName);
 		if (pack) {
 			return pack.versions.map(ver => ver.package.version).reverse();
+		}
+		return null;
+	}
+	
+	async getPackageInfo(authorName: string, packageName: string, packageVersion: string): Promise<WallyGithubRegistryPackageVersion | null> {
+		const pack = await this.getRegistryPackage(authorName, packageName);
+		if (pack) {
+			for (const ver of pack.versions) {
+				if (isSemverCompatible(packageVersion, ver.package.version)) {
+					return ver;
+				}
+			}
 		}
 		return null;
 	}

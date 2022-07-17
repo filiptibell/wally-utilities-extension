@@ -12,6 +12,8 @@ import { wallyStatusBar } from "./utils/statusbar";
 
 import { WallyFilesystemWatcher } from "./wally/watcher";
 
+import { getRealmCorrection, getRealmSection, WallyPackageRealm } from "./wally/base";
+
 import { getRegistryHelper, WallyRegistryHelper } from "./wally/registry";
 
 import {
@@ -41,6 +43,7 @@ const DEFAULT_DIAGNOSTIC_MESSAGES = new Map([
 	["W-205", "Missing package registry."],
 	// Information
 	["W-301", "A newer package version is available.\nThe latest version is `<PACKAGE_VERSION>`."],
+	["W-302", "Package is a `<REALM_NAME>` dependency but was listed in `<REALM_CURRENT>`.\nDid you mean to list it under `<REALM_SECTION>`?"],
 ]);
 
 
@@ -141,6 +144,7 @@ const createDiagnostic = (
 	code: string,
 	pattern?: string,
 	replacement?: string,
+	messageOverride?: string,
 ) => {
 	let sev = vscode.DiagnosticSeverity.Error;
 	if (code.startsWith("W-2")) {
@@ -150,23 +154,25 @@ const createDiagnostic = (
 	} else if (code.startsWith("W-4")) {
 		sev = vscode.DiagnosticSeverity.Hint;
 	}
-	let mess = sev.toString();
-	const defaultMessage = DEFAULT_DIAGNOSTIC_MESSAGES.get(code);
-	if (defaultMessage) {
-		mess = defaultMessage;
-	}
-	if (
-		pattern
-		&& pattern.length > 0
-		&& replacement
-		&& replacement.length > 0
-	) {
-		mess = mess.replace(
-			pattern,
-			replacement
-		);
-	} else {
-		mess = mess.split("\n")[0];
+	let mess = messageOverride ?? sev.toString();
+	if (!messageOverride) {
+		const defaultMessage = DEFAULT_DIAGNOSTIC_MESSAGES.get(code);
+		if (defaultMessage) {
+			mess = defaultMessage;
+		}
+		if (
+			pattern
+			&& pattern.length > 0
+			&& replacement
+			&& replacement.length > 0
+		) {
+			mess = mess.replace(
+				pattern,
+				replacement
+			);
+		} else {
+			mess = mess.split("\n")[0];
+		}
 	}
 	const range = new vscode.Range(start, end);
 	const item = new vscode.Diagnostic(range, mess, sev);
@@ -181,6 +187,7 @@ const createDependencyDiagnostic = (
 	code: string,
 	pattern?: string,
 	replacement?: string,
+	messageOverride?: string,
 ) => {
 	return createDiagnostic(
 		dependency.originalStart,
@@ -188,6 +195,7 @@ const createDependencyDiagnostic = (
 		code,
 		pattern,
 		replacement,
+		messageOverride,
 	);
 };
 
@@ -202,7 +210,8 @@ const createDependencyDiagnostic = (
 
 const diagnoseDependency = async (
 	manifest: WallyManifest,
-	dependency: WallyManifestDependency
+	dependency: WallyManifestDependency,
+	dependencyRealm: WallyPackageRealm
 ): Promise<vscode.Diagnostic | null> => {
 	const registry = await getManifestRegistryHelper(manifest);
 	if (!registry) {
@@ -231,6 +240,23 @@ const diagnoseDependency = async (
 	if (!(await registry.isValidVersion(dependency.author, dependency.name, dependency.fullVersion))) {
 		const closest = await getClosestPackageVersion(registry, dependency.author, dependency.name, dependency.version);
 		return createDependencyDiagnostic(dependency, "W-103", "<VERSION_IDENTIFIER>", closest);
+	}
+	// Check if the package might be misplaced, like
+	// if a server package is under shared dependencies
+	const fullInfo = await registry.getFullPackageInfo(dependency.author, dependency.name, dependency.fullVersion);
+	if (fullInfo) {
+		const definedRealm = fullInfo.package.realm;
+		const corrected = getRealmCorrection(dependencyRealm, definedRealm);
+		if (corrected) {
+			const message = DEFAULT_DIAGNOSTIC_MESSAGES.get("W-302");
+			if (message) {
+				let replaced = message.slice(0, message.length);
+				replaced = replaced.replace("<REALM_NAME>", definedRealm);
+				replaced = replaced.replace("<REALM_CURRENT>", getRealmSection(dependencyRealm));
+				replaced = replaced.replace("<REALM_SECTION>", getRealmSection(corrected));
+				return createDependencyDiagnostic(dependency, "W-302", undefined, undefined, replaced);
+			}
+		}
 	}
 	// Check if there is a newer version
 	if (await registry.isOldVersion(dependency.author, dependency.name, dependency.fullVersion)) {
@@ -381,15 +407,17 @@ export class WallyDiagnosticsProvider implements vscode.Disposable {
 					newDiags.push(diagnosePackageRegistry(manifest));
 					newDiags.push(diagnosePackageVersion(manifest));
 					// Diagnose all dependencies
-					for (const dependencyList of [
-						manifest.dependencies.shared,
-						manifest.dependencies.server,
-						manifest.dependencies.dev,
-					]) {
+					const allDeps: [WallyPackageRealm, WallyManifestDependency[]][] = [
+						["shared", manifest.dependencies.shared],
+						["server", manifest.dependencies.server],
+						["dev", manifest.dependencies.dev],
+					];
+					for (const [dependencyRealm, dependencyList] of allDeps) {
 						for (const dependency of dependencyList) {
 							newDiags.push(diagnoseDependency(
 								manifest,
 								dependency,
+								dependencyRealm,
 							));
 						}
 					}

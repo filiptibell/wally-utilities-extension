@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Added diagnostics for dependency realms, meaning things such as `realm = "server"` packages being listed under `dependencies` when they should be listed under `server-dependencies`
+
 ## `[0.3.0]` - July 16, 2022
 
 ### Added
