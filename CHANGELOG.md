@@ -5,6 +5,7 @@
 ### Added
 
 - Added details when hovering over dependencies
+- Added the current version of Wally being used to the status bar, if available
 
 ## `[0.3.1]` - July 17, 2022
 

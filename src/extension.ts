@@ -11,7 +11,7 @@ import {
 
 import {
 	wallyStatusBar,
-} from "./utils/statusbar";
+} from "./wally/statusbar";
 
 import {
 	WallyFilesystemWatcher,

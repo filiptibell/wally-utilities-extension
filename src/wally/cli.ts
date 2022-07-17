@@ -25,12 +25,12 @@ export const runWallyCliCommand = async (command: string, ...args: string[]) => 
 
 
 
-// Update wally version every 5 seconds, this just
+// Update wally version every 10 seconds, this just
 // runs "wally -V" which really shouldn't be expensive
 const updateWallyVersion = async () => {
 	const version = await getExecutableVersion("wally");
 	wallyCliVersion = version;
 };
 
-setTimeout(updateWallyVersion, 10);
-setInterval(updateWallyVersion, 5000);
+setTimeout(updateWallyVersion, 0);
+setInterval(updateWallyVersion, 10_000);

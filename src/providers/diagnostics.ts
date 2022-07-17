@@ -8,7 +8,7 @@ import { isValidSemver } from "../utils/semver";
 
 import { matchClosestOption, getMatchDistance } from "../utils/matching";
 
-import { wallyStatusBar } from "../utils/statusbar";
+import { wallyStatusBar } from "../wally/statusbar";
 
 import { WallyFilesystemWatcher } from "../wally/watcher";
 

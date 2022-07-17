@@ -6,7 +6,9 @@ import {
 	EMOJI_WARNING,
 	EMOJI_UPGRADE,
 	EMOJI_UNKNOWN,
-} from "./constants";
+} from "../utils/constants";
+
+import { getWallyVersion } from "./cli";
  
 
 
@@ -51,8 +53,10 @@ const updateStatusBar = () => {
 		}
 		return;
 	}
+	const versionString = getWallyVersion();
+	const wallyString = versionString ? `Wally ${versionString}` : "Wally";
 	if (inProgress) {
-		wallyStatusBar.text = `${EMOJI_UNKNOWN} Wally`;
+		wallyStatusBar.text = `${EMOJI_UNKNOWN} ${wallyString}`;
 		if (statusBarShown !== true) {
 			statusBarShown = true;
 			wallyStatusBar.show();
@@ -63,15 +67,15 @@ const updateStatusBar = () => {
 		|| numWarnings > 0
 		|| numErrored > 0
 	) {
-		let text = `${EMOJI_OK} Wally`;
+		let text = `${EMOJI_OK} ${wallyString}`;
 		if (numErrored > 0) {
-			text = `${EMOJI_ERROR} Wally - ${numErrored} errors`;
+			text = `${EMOJI_ERROR} ${wallyString} - ${numErrored} errors`;
 			text = text.replace("1 errors", "1 error");
 		} else if (numWarnings > 0) {
-			text = `${EMOJI_WARNING} Wally - ${numWarnings} warnings`;
+			text = `${EMOJI_WARNING} ${wallyString} - ${numWarnings} warnings`;
 			text = text.replace("1 warnings", "1 warning");
 		} else if (numUpgradable > 0) {
-			text = `${EMOJI_UPGRADE} Wally - ${numUpgradable} upgradable`;
+			text = `${EMOJI_UPGRADE} ${wallyString} - ${numUpgradable} upgradable`;
 		}
 		wallyStatusBar.text = text;
 		if (statusBarShown !== true) {
