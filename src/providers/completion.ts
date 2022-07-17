@@ -4,7 +4,9 @@ import { getGlobalLog, WallyLogHelper } from "../utils/logger";
 
 import { isWallyManifest } from "../wally/base";
 
-import { parseWallyManifest, WallyManifestDependency } from "../wally/manifest";
+import { findDependencyAtPosition } from "../wally/misc";
+
+import { parseWallyManifest } from "../wally/manifest";
 
 import { getRegistryHelper } from "../wally/registry";
 
@@ -121,48 +123,33 @@ export class WallyCompletionProvider implements vscode.CompletionItemProvider<vs
 			const manifest = parseWallyManifest(document);
 			if (manifest) {
 				// Look for what dependency our cursor is currently inside
-				let found: WallyManifestDependency | null = null;
-				for (const dependencyList of [
-					manifest.dependencies.shared,
-					manifest.dependencies.server,
-					manifest.dependencies.dev,
-				]) {
-					for (const dependency of dependencyList) {
-						const deprange = new vscode.Range(dependency.start, dependency.end);
-						if (deprange.contains(position)) {
-							found = dependency;
-							break;
-						}
-					}
-					if (found) {
-						break;
-					}
-				}
+				const found = findDependencyAtPosition(manifest, position);
 				// Add completion items for the found dependency
 				if (found) {
+					const [_, dependency] = found;
 					const registryUrl = manifest.package.registry.cleanedText;
-					if (found.hasFullAuthor) {
-						if (found.hasFullName) {
+					if (dependency.hasFullAuthor) {
+						if (dependency.hasFullName) {
 							await this.providePackageVersionCompletions(
 								registryUrl,
 								items,
-								found.author,
-								found.name,
-								found.fullVersion
+								dependency.author,
+								dependency.name,
+								dependency.fullVersion
 							);
 						} else {
 							await this.providePackageNameCompletions(
 								registryUrl,
 								items,
-								found.author,
-								found.name
+								dependency.author,
+								dependency.name
 							);
 						}
 					} else {
 						await this.providePackageAuthorCompletions(
 							registryUrl,
 							items,
-							found.author
+							dependency.author
 						);
 					}
 				}
