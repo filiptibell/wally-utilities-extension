@@ -11,6 +11,7 @@ The extension can be downloaded from the [Visual Studio Marketplace](https://mar
 Features in `wally.toml`:
 
 * Autocomplete for dependencies.
+* Information about dependencies on hover.
 * Diagnostics for dependencies, including:
 	- Incomplete dependency (Author / name / version is missing)
 	- Invalid dependency (Author / name / version does not exist)
