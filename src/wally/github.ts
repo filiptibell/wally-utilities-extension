@@ -280,7 +280,6 @@ export class WallyGithubHelper {
 		return null;
 	}
 	
-	@pMemoizeDecorator()
 	private async getRegistryAuthor(authorName: string): Promise<WallyGithubRegistryAuthor | null> {
 		// Check for cached authors
 		const lowered = authorName.toLowerCase();
@@ -326,7 +325,6 @@ export class WallyGithubHelper {
 		return null;
 	}
 	
-	@pMemoizeDecorator()
 	private async getRegistryPackage(authorName: string, packageName: string): Promise<WallyGithubRegistryPackage | null> {
 		// Check for cached packages
 		const loweredAuthor = authorName.toLowerCase();
@@ -380,7 +378,6 @@ export class WallyGithubHelper {
 		return null;
 	}
 	
-	@pMemoizeDecorator()
 	private async getRegistryConfig(): Promise<WallyGithubRegistryConfig | null> {
 		const tree = await this.getRegistryTree();
 		if (tree && this.registryUser && this.registryRepo) {
