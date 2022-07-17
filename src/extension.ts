@@ -89,6 +89,7 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 	
 	// Add everything to cleanup on deactivation
+	context.subscriptions.push(watcher);
 	context.subscriptions.push(complDisposable);
 	context.subscriptions.push(configDisposable);
 	context.subscriptions.push(diagsDisposable);
