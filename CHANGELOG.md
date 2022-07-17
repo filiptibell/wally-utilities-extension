@@ -10,6 +10,7 @@
 
 - Fixed single-character package names not being valid (eg. `osyrisrblx/t@3.0.0`)
 - Fixed some issues related to caching of package authors & names
+- Other minor internal fixes
 
 ## `[0.3.0]` - July 16, 2022
 
