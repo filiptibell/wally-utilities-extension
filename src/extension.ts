@@ -25,6 +25,8 @@ import {
 	getRegistryHelper,
 } from "./wally/registry";
 
+import { } from "./commands";
+
 import {
 	WALLY_COMPLETION_SELECTOR,
 	WALLY_COMPLETION_TRIGGERS,
