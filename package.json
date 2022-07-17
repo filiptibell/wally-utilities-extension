@@ -2,7 +2,7 @@
 	"name": "wally-utilities",
 	"displayName": "Wally Utilities",
 	"description": "Diagnostics & completions for the Wally package manager",
-	"version": "0.3.1",
+	"version": "0.4.0",
 	"license": "MIT",
 	"publisher": "filiptibell",
 	"author": {
