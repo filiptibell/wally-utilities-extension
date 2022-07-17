@@ -1,3 +1,9 @@
+import * as vscode from "vscode";
+
+
+
+
+
 export type WallyPackageRealm = "shared" | "server" | "dev";
 
 export type WallyPackageRealmSection = "dependencies" | "server-dependencies" | "dev-dependencies";
@@ -65,6 +71,10 @@ export type WallyGithubRegistryConfig = {
 
 
 
+
+export const isWallyManifest = (document: vscode.TextDocument) => {
+	return document.fileName.endsWith("wally.toml");
+};
 
 export const getRealmCorrection = (
 	currentRealm: WallyPackageRealm,

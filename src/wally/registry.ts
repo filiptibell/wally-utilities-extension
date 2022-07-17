@@ -88,6 +88,18 @@ export class WallyRegistryHelper {
 		return null;
 	};
 	
+	async getLatestSemverCompatibleVersion(author: string, name: string, version: string): Promise<string | null> {
+		const availableVersions = await this.getPackageVersions(author, name);
+		if (availableVersions) {
+			for (const availableVersion of availableVersions) {
+				if (isSemverCompatible(version, availableVersion)) {
+					return availableVersion;
+				}
+			}
+		}
+		return null;
+	};
+	
 	async getFullPackageInfo(author: string, name: string, version: string): Promise<WallyGithubRegistryPackageVersion | null> {
 		// Look at direct registry
 		const hub = getRegistryGitHubHelper(this.reg);

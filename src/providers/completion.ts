@@ -2,6 +2,8 @@ import * as vscode from "vscode";
 
 import { getGlobalLog, WallyLogHelper } from "../utils/logger";
 
+import { isWallyManifest } from "../wally/base";
+
 import { parseWallyManifest, WallyManifestDependency } from "../wally/manifest";
 
 import { getRegistryHelper } from "../wally/registry";
@@ -23,14 +25,6 @@ export const WALLY_COMPLETION_TRIGGERS = [
 	".",
 	"-",
 ];
-
-
-
-
-
-const isWallyManifest = (document: vscode.TextDocument) => {
-	return document.fileName.endsWith("wally.toml");
-};
 
 
 

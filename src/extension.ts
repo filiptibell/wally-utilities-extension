@@ -35,6 +35,11 @@ import {
 
 import { WallyDiagnosticsProvider } from "./providers/diagnostics";
 
+import {
+	WALLY_HOVER_SELECTOR,
+	WallyHoverProvider,
+} from "./providers/hover";
+
 
 
 
@@ -69,6 +74,11 @@ export function activate(context: vscode.ExtensionContext) {
 	const diagsDisposable = new WallyDiagnosticsProvider(watcher);
 	diagsDisposable.setEnabled(conf.get<boolean>("diagnostics.enabled") !== false);
 	
+	// Create hover provider
+	const hover = new WallyHoverProvider();
+	hover.setEnabled(conf.get<boolean>("hover.enabled") !== false);
+	const hoverDisposable = vscode.languages.registerHoverProvider(WALLY_HOVER_SELECTOR, hover);
+	
 	// Listen to extension configuration changing
 	const configDisposable = vscode.workspace.onDidChangeConfiguration(event => {
 		log.normalText(`Changed extension config`);
@@ -80,6 +90,8 @@ export function activate(context: vscode.ExtensionContext) {
 			compl.setEnabled(conf.get<boolean>("completion.enabled") !== false);
 		} else if (event.affectsConfiguration("diagnostics.enabled")) {
 			diagsDisposable.setEnabled(conf.get<boolean>("diagnostics.enabled") !== false);
+		} else if (event.affectsConfiguration("hover.enabled")) {
+			hover.setEnabled(conf.get<boolean>("hover.enabled") !== false);
 		} else if (event.affectsConfiguration("log.level")) {
 			const logLevel = conf.get<WallyLogLevel>("log.level");
 			if (logLevel) {
@@ -93,6 +105,7 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(complDisposable);
 	context.subscriptions.push(configDisposable);
 	context.subscriptions.push(diagsDisposable);
+	context.subscriptions.push(hoverDisposable);
 }
 
 export function deactivate() { }

@@ -6,6 +6,6 @@ export const EMOJI_UNKNOWN = "❔";
 
 export const GITHUB_BASE_URL = "https://github.com/";
 
-export const PUBLIC_REGISTRY_USER_AND_REPO = "UpliftGames/wally-index";
+export const PUBLIC_REGISTRY_USER_AND_REPO = "upliftgames/wally-index";
 
 export const PUBLIC_REGISTRY_URL = GITHUB_BASE_URL + PUBLIC_REGISTRY_USER_AND_REPO;
