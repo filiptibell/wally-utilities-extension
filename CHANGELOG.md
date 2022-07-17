@@ -6,6 +6,11 @@
 
 - Added diagnostics for dependency realms, meaning things such as `realm = "server"` packages being listed under `dependencies` when they should be listed under `server-dependencies`
 
+### Fixed
+
+- Fixed single-character package names not being valid (eg. `osyrisrblx/t@3.0.0`)
+- Fixed some issues related to caching of package authors & names
+
 ## `[0.3.0]` - July 16, 2022
 
 ### Added
