@@ -6,6 +6,10 @@
 
 - Added links to readme and changelog files in hovers for installed packages
 
+### Fixed
+
+- Fixed incorrect autocomplete for packages that contain a separator such as `_`, `-`, or `.`.
+
 ## `[0.4.0]` - July 17, 2022
 
 ### Added

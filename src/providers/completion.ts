@@ -30,6 +30,19 @@ export const WALLY_COMPLETION_TRIGGERS = [
 
 
 
+const sliceToAfterNearestSeparator = (str: string, index: number) => {
+	const separatorIndex = str.search(/[\_\-\.]/);
+	if (separatorIndex >= 0 && separatorIndex < index) {
+		return str.slice(separatorIndex + 1);
+	} else {
+		return str;
+	}
+};
+
+
+
+
+
 export class WallyCompletionProvider implements vscode.CompletionItemProvider<vscode.CompletionItem> {
 	private log: WallyLogHelper;
 	
@@ -57,6 +70,10 @@ export class WallyCompletionProvider implements vscode.CompletionItemProvider<vs
 			for (const packageAuthor of filtered) {
 				const item = new vscode.CompletionItem(packageAuthor);
 				item.kind = vscode.CompletionItemKind.User;
+				item.insertText = sliceToAfterNearestSeparator(
+					packageAuthor,
+					author.length
+				);
 				items.push(item);
 			}
 		}
@@ -79,6 +96,10 @@ export class WallyCompletionProvider implements vscode.CompletionItemProvider<vs
 			for (const packageName of filtered) {
 				const item = new vscode.CompletionItem(packageName);
 				item.kind = vscode.CompletionItemKind.Enum;
+				item.insertText = sliceToAfterNearestSeparator(
+					packageName,
+					name.length
+				);
 				items.push(item);
 			}
 		}
@@ -102,7 +123,10 @@ export class WallyCompletionProvider implements vscode.CompletionItemProvider<vs
 				const item = new vscode.CompletionItem(packageVersion);
 				item.kind = vscode.CompletionItemKind.EnumMember;
 				item.sortText = index.toString().padStart(5, "0");
-				item.insertText = packageVersion.slice(version.length);
+				item.insertText = sliceToAfterNearestSeparator(
+					packageVersion,
+					version.length
+				);
 				items.push(item);
 			}
 		}
