@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Added links to readme and changelog files in hovers for installed packages
+
 ## `[0.4.0]` - July 17, 2022
 
 ### Added

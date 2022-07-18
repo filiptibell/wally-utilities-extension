@@ -10,11 +10,11 @@ import { matchAuthorAndPackage } from "../utils/matching";
 
 import { isWallyManifest, WallyGithubRegistryPackageVersion } from "../wally/base";
 
-import { findDependencyAtPosition } from "../wally/misc";
-
-import { parseWallyManifest, WallyManifestDependency } from "../wally/manifest";
+import { parseWallyManifest, findDependencyAtPosition, WallyManifestDependency } from "../wally/manifest";
 
 import { getRegistryHelper, WallyRegistryHelper } from "../wally/registry";
+
+import { findFileUriInPackageRoot, findInstalledPackageRootUri } from "../wally/fs";
 
 
 
@@ -40,7 +40,13 @@ const parseAuthorName = (author: string) => {
 	return author.slice(0, detailStartIdx).trim();
 };
 
-const createDependencyHoverMarkdown = (info: WallyGithubRegistryPackageVersion) => {
+const uriToPreviewCommandLink = (uri: vscode.Uri) => {
+	const args = [{ fileUri: uri }];
+	const encoded = encodeURIComponent(JSON.stringify(args));
+	return vscode.Uri.parse(`command:wally.previewFile?${encoded}`);
+};
+
+const createDependencyHoverMarkdown = async (dependency: WallyManifestDependency, info: WallyGithubRegistryPackageVersion) => {
 	const mkdown = new vscode.MarkdownString();
 	mkdown.isTrusted = true;
 	mkdown.supportHtml = true;
@@ -75,6 +81,31 @@ const createDependencyHoverMarkdown = (info: WallyGithubRegistryPackageVersion) 
 	// Package name
 	mkdown.appendMarkdown(`<h2 style="display: inline;">$(package)  ${makeCapitalCase(packageName)}</h2>`);
 	mkdown.appendMarkdown(`<h3 style="display: inline;">by ${packageAuthor}</h3>`);
+	// Links to readme and changelog for installed
+	// package, if they exist in the package source
+	const rootUri = await findInstalledPackageRootUri(
+		dependency.author,
+		dependency.name,
+		dependency.version
+	);
+	if (rootUri) {
+		const [readmeUri, changelogUri] = await Promise.all([
+			findFileUriInPackageRoot(rootUri, "README"),
+			findFileUriInPackageRoot(rootUri, "CHANGELOG"),
+		]);
+		const readmeLink = readmeUri ? uriToPreviewCommandLink(readmeUri) : null;
+		const changelogLink = changelogUri ? uriToPreviewCommandLink(changelogUri) : null;
+		if (readmeLink && changelogLink) {
+			mkdown.appendMarkdown("<p>");
+			mkdown.appendMarkdown(`<a href = "${readmeLink}">$(link) Readme </a>`);
+			mkdown.appendMarkdown(`<a href = "${changelogLink}">$(link) Changelog </a>`);
+			mkdown.appendMarkdown("</p>");
+		} else if (readmeLink) {
+			mkdown.appendMarkdown(`<p><a href = "${readmeLink}">$(link) Readme </a></p>`);
+		} else if (changelogLink) {
+			mkdown.appendMarkdown(`<p><a href = "${changelogLink}">$(link) Changelog </a></p>`);
+		}
+	}
 	// Package description
 	if (info.package.description) {
 		mkdown.appendMarkdown(`<p>${info.package.description}</p>`);
@@ -121,7 +152,10 @@ export class WallyHoverProvider implements vscode.HoverProvider {
 				);
 				if (latestInfo) {
 					return new vscode.Hover(
-						createDependencyHoverMarkdown(latestInfo),
+						await createDependencyHoverMarkdown(
+							dependency,
+							latestInfo
+						),
 						new vscode.Range(
 							dependency.start,
 							dependency.end

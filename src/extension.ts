@@ -25,7 +25,7 @@ import {
 	getRegistryHelper,
 } from "./wally/registry";
 
-import { } from "./providers/commands";
+import { ALL_COMMANDS } from "./providers/commands";
 
 import {
 	WALLY_COMPLETION_SELECTOR,
@@ -64,6 +64,15 @@ export function activate(context: vscode.ExtensionContext) {
 	// Always cache the public wally registry authors for fast initial autocomplete
 	const publicRegistry = getRegistryHelper(PUBLIC_REGISTRY_URL);
 	publicRegistry.getPackageAuthors();
+	
+	// Create all commands
+	const commandDisposables = new Array<vscode.Disposable>();
+	for (const [commandIdentifier, commandHandler] of ALL_COMMANDS) {
+		commandDisposables.push(vscode.commands.registerCommand(
+			commandIdentifier,
+			commandHandler,
+		));
+	}
 	
 	// Create completion provider
 	const compl = new WallyCompletionProvider();
@@ -106,6 +115,9 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(configDisposable);
 	context.subscriptions.push(diagsDisposable);
 	context.subscriptions.push(hoverDisposable);
+	for (const commandDisposable of commandDisposables) {
+		context.subscriptions.push(commandDisposable);
+	}
 }
 
 export function deactivate() { }

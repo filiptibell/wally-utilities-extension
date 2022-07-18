@@ -4,9 +4,7 @@ import { getGlobalLog, WallyLogHelper } from "../utils/logger";
 
 import { isWallyManifest } from "../wally/base";
 
-import { findDependencyAtPosition } from "../wally/misc";
-
-import { parseWallyManifest } from "../wally/manifest";
+import { parseWallyManifest, findDependencyAtPosition } from "../wally/manifest";
 
 import { getRegistryHelper } from "../wally/registry";
 
