@@ -378,6 +378,7 @@ export class WallyGithubHelper {
 		return null;
 	}
 	
+	@pMemoizeDecorator()
 	private async getRegistryConfig(): Promise<WallyGithubRegistryConfig | null> {
 		const tree = await this.getRegistryTree();
 		if (tree && this.registryUser && this.registryRepo) {
@@ -509,12 +510,13 @@ const hubs = new Map<string, WallyGithubHelper>();
 let authToken: string | null = null;
 
 export const getRegistryGitHubHelper = (registry: string) => {
-	const cached = hubs.get(registry);
+	const lowered = registry.toLowerCase();
+	const cached = hubs.get(lowered);
 	if (cached) {
 		return cached;
 	} else {
-		const newHub = new WallyGithubHelper(registry, authToken);
-		hubs.set(registry, newHub);
+		const newHub = new WallyGithubHelper(lowered, authToken);
+		hubs.set(lowered, newHub);
 		return newHub;
 	}
 };
