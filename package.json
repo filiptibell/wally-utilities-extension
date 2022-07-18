@@ -57,10 +57,10 @@
 					"default": true,
 					"description": "If diagnostics should be enabled or not."
 				},
-				"wally.versionLens.enabled": {
+				"wally.hover.enabled": {
 					"type": "boolean",
 					"default": true,
-					"description": "If the version lens should be enabled or not. (not yet implemented)"
+					"description": "If dependency hover info should be enabled or not."
 				},
 				"wally.log.level": {
 					"enum": [
