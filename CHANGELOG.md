@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## `[0.4.1]` - July 18, 2022
 
 ### Added
 
