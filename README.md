@@ -1,6 +1,10 @@
-# Wally Utilities
+<h1 align="center">Wally Utilities</h1>
 
-![Visual Studio Marketplace Badge](https://vsmarketplacebadge.apphb.com/version/filiptibell.wally-utilities.svg)
+<div align="center">
+<img src="https://vsmarketplacebadge.apphb.com/version/filiptibell.wally-utilities.svg"/>
+</div>
+
+<br>
 
 This VSCode extension provides some nice-to-haves when using the [Wally](https://wally.run) package manager.
 
@@ -8,7 +12,17 @@ The extension can be downloaded from the [Visual Studio Marketplace](https://mar
 
 ----
 
-Features in `wally.toml`:
+<div align="center">
+<img
+style="width: 75%; height: auto;"
+src="assets/images/CodeCompletions.png"
+/>
+</div>
+
+----
+
+<details>
+<summary><b>Feature List</b></summary>
 
 * Autocomplete for dependencies.
 * Information about dependencies on hover.
@@ -21,9 +35,12 @@ Features in `wally.toml`:
 * User-friendly hints for errors like `Did you mean "x"`, wherever applicable.
 * **(TODO)** Quick actions for fixing diagnostics.
 
-----
+</details>
 
-Some additional features:
+<details>
+<summary><b>Additional Features</b></summary>
 
 * Fully supports any number of fallback registries, in addition to the [public registry](https://github.com/UpliftGames/wally-index).
 * Adds the TOML language to the `wally.lock` file, giving it proper syntax highlighting.
+
+</details>
