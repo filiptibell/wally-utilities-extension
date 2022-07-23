@@ -1,5 +1,11 @@
 # Changelog
 
+## `[0.4.2]` - July 23, 2022
+
+### Fixed
+
+- Fixed settings for the extension not being correct
+
 ## `[0.4.1]` - July 18, 2022
 
 ### Added
