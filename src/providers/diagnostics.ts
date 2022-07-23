@@ -8,8 +8,6 @@ import { isValidSemver } from "../utils/semver";
 
 import { matchClosestOption, getMatchDistance } from "../utils/matching";
 
-import { wallyStatusBar } from "../wally/statusbar";
-
 import { WallyFilesystemWatcher } from "../wally/watcher";
 
 import { getRealmCorrection, getRealmSection, WallyPackageRealm } from "../wally/base";
@@ -21,6 +19,8 @@ import {
 	WallyManifest,
 	WallyManifestDependency,
 } from "../wally/manifest";
+
+import { WallyStatusBarProvider } from "./statusbar";
 
 
 
@@ -358,6 +358,7 @@ const countUpgradeDiagnostics = (diagnostics: vscode.Diagnostic[]) => {
 
 export class WallyDiagnosticsProvider implements vscode.Disposable {
 	private log: WallyLogHelper;
+	private bar: WallyStatusBarProvider;
 	
 	private col: vscode.DiagnosticCollection;
 	
@@ -365,8 +366,9 @@ export class WallyDiagnosticsProvider implements vscode.Disposable {
 	
 	private enabled: boolean;
 	
-	constructor(watcher: WallyFilesystemWatcher) {
+	constructor(watcher: WallyFilesystemWatcher, statusBar: WallyStatusBarProvider) {
 		this.log = getGlobalLog();
+		this.bar = statusBar;
 		this.col = vscode.languages.createDiagnosticCollection("wally");
 		this.documents = new Map();
 		this.enabled = true;
@@ -423,7 +425,7 @@ export class WallyDiagnosticsProvider implements vscode.Disposable {
 					}
 				}
 				// Put status bar in "in progress" mode
-				wallyStatusBar.setInProgress(true);
+				this.bar.setInProgress(true);
 				// Wait for all diagnostic results to arrive and add them in
 				const diagnostics = await Promise.all(newDiags);
 				const filtered = diagnostics.filter(diag => !!diag) as vscode.Diagnostic[];
@@ -434,12 +436,12 @@ export class WallyDiagnosticsProvider implements vscode.Disposable {
 					this.log.verboseText(`Diagnosed ${filtered.length} manifest issues`);
 				}
 				// Set new status bar status
-				wallyStatusBar.setErroredCount(countErrorDiagnostics(filtered));
-				wallyStatusBar.setWarningCount(countWarningDiagnostics(filtered));
-				wallyStatusBar.setUpgradableCount(countUpgradeDiagnostics(filtered));
-				wallyStatusBar.setDependencyCount(filtered.length);
+				this.bar.setErroredCount(countErrorDiagnostics(filtered));
+				this.bar.setWarningCount(countWarningDiagnostics(filtered));
+				this.bar.setUpgradableCount(countUpgradeDiagnostics(filtered));
+				this.bar.setDependencyCount(filtered.length);
 				// Move status bar out of "in progress" mode
-				wallyStatusBar.setInProgress(false);
+				this.bar.setInProgress(false);
 			} else {
 				this.col.delete(uri);
 			}

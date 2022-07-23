@@ -10,10 +10,6 @@ import {
 } from "./utils/logger";
 
 import {
-	wallyStatusBar,
-} from "./wally/statusbar";
-
-import {
 	WallyFilesystemWatcher,
 } from "./wally/watcher";
 
@@ -40,6 +36,10 @@ import {
 	WallyHoverProvider,
 } from "./providers/hover";
 
+import {
+	WallyStatusBarProvider,
+} from "./providers/statusbar";
+
 
 
 
@@ -49,7 +49,6 @@ export function activate(context: vscode.ExtensionContext) {
 	
 	// Set initial config stuff
 	setGitHubAuthToken(conf.get<string>("auth.token") || null);
-	wallyStatusBar.setIsEnabled(conf.get<boolean>("statusBar.enabled"));
 	
 	// Set initial log level for global log
 	const log = getGlobalLog();
@@ -74,14 +73,18 @@ export function activate(context: vscode.ExtensionContext) {
 		));
 	}
 	
+	// Create status bar provider
+	const statusBar = new WallyStatusBarProvider();
+	statusBar.setIsEnabled(conf.get<boolean>("statusBar.enabled"));
+	
+	// Create diagnostic provider
+	const diags = new WallyDiagnosticsProvider(watcher, statusBar);
+	diags.setEnabled(conf.get<boolean>("diagnostics.enabled") !== false);
+	
 	// Create completion provider
 	const compl = new WallyCompletionProvider();
 	compl.setEnabled(conf.get<boolean>("completion.enabled") !== false);
 	const complDisposable = vscode.languages.registerCompletionItemProvider(WALLY_COMPLETION_SELECTOR, compl, ...WALLY_COMPLETION_TRIGGERS);
-	
-	// Create diagnostic provider
-	const diagsDisposable = new WallyDiagnosticsProvider(watcher);
-	diagsDisposable.setEnabled(conf.get<boolean>("diagnostics.enabled") !== false);
 	
 	// Create hover provider
 	const hover = new WallyHoverProvider();
@@ -94,11 +97,11 @@ export function activate(context: vscode.ExtensionContext) {
 		if (event.affectsConfiguration("auth.token")) {
 			setGitHubAuthToken(conf.get<string>("auth.token") || null);
 		} else if (event.affectsConfiguration("statusBar.enabled")) {
-			wallyStatusBar.setIsEnabled(conf.get<boolean>("statusBar.enabled"));
+			statusBar.setIsEnabled(conf.get<boolean>("statusBar.enabled"));
 		} else if (event.affectsConfiguration("completion.enabled")) {
 			compl.setEnabled(conf.get<boolean>("completion.enabled") !== false);
 		} else if (event.affectsConfiguration("diagnostics.enabled")) {
-			diagsDisposable.setEnabled(conf.get<boolean>("diagnostics.enabled") !== false);
+			diags.setEnabled(conf.get<boolean>("diagnostics.enabled") !== false);
 		} else if (event.affectsConfiguration("hover.enabled")) {
 			hover.setEnabled(conf.get<boolean>("hover.enabled") !== false);
 		} else if (event.affectsConfiguration("log.level")) {
@@ -111,9 +114,10 @@ export function activate(context: vscode.ExtensionContext) {
 	
 	// Add everything to cleanup on deactivation
 	context.subscriptions.push(watcher);
+	context.subscriptions.push(statusBar);
+	context.subscriptions.push(diags);
 	context.subscriptions.push(complDisposable);
 	context.subscriptions.push(configDisposable);
-	context.subscriptions.push(diagsDisposable);
 	context.subscriptions.push(hoverDisposable);
 	for (const commandDisposable of commandDisposables) {
 		context.subscriptions.push(commandDisposable);
