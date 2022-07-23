@@ -5,6 +5,7 @@
 ### Fixed
 
 - Fixed having to reload the window for new extension settings to apply
+- Fixed setting more than one extension setting at the same time
 
 ## `[0.4.2]` - July 23, 2022
 

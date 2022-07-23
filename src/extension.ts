@@ -103,17 +103,24 @@ export function activate(context: vscode.ExtensionContext) {
 				return event.affectsConfiguration(`wally.${section}`);
 			};
 			// Check what specific setting changed
+			// NOTE: We can't do an elseif chain here since it's possible
+			// to change more than just one extension setting at a time
 			if (didChange("auth.token")) {
 				setGitHubAuthToken(conf.get<string>("auth.token") || null);
-			} else if (didChange("statusBar.enabled")) {
+			}
+			if (didChange("statusBar.enabled")) {
 				statusBar.setIsEnabled(conf.get<boolean>("statusBar.enabled"));
-			} else if (didChange("completion.enabled")) {
+			}
+			if (didChange("completion.enabled")) {
 				compl.setEnabled(conf.get<boolean>("completion.enabled") !== false);
-			} else if (didChange("diagnostics.enabled")) {
+			}
+			if (didChange("diagnostics.enabled")) {
 				diags.setEnabled(conf.get<boolean>("diagnostics.enabled") !== false);
-			} else if (didChange("hover.enabled")) {
+			}
+			if (didChange("hover.enabled")) {
 				hover.setEnabled(conf.get<boolean>("hover.enabled") !== false);
-			} else if (didChange("log.level")) {
+			}
+			if (didChange("log.level")) {
 				const logLevel = conf.get<WallyLogLevel>("log.level");
 				if (logLevel) {
 					log.setLevel(logLevel);
