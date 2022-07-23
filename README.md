@@ -43,9 +43,14 @@ The extension can be downloaded from the [Visual Studio Marketplace](https://mar
 
 - Incomplete dependency (Author / name / version is missing)
 - Invalid dependency (Author / name / version does not exist)
+- Incorrect dependency realm
 - A newer version of a package is available
 
 </details>
+
+<div align="center">
+<img src="assets/images/Diagnostics.png"/>
+</div>
 
 <!--- Hovers --->
 <details>
@@ -59,6 +64,10 @@ The extension can be downloaded from the [Visual Studio Marketplace](https://mar
 - Direct link to the package on the official [wally.run](https://wally.run) page
 
 </details>
+
+<div align="center">
+<img src="assets/images/Hovers.png"/>
+</div>
 
 <!--- Misc --->
 <details>
