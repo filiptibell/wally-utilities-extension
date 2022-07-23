@@ -1,64 +1,24 @@
 import * as vscode from "vscode";
 
-import { runWallyCliCommand } from "../wally/cli";
+import cliCommands from "./cli";
+import fileCommands from "./files";
+import loggingCommands from "./logging";
+
+const ALL_COMMANDS = {
+	...cliCommands,
+	...fileCommands,
+	...loggingCommands,
+};
+
+
+
+
 
 // https://stackoverflow.com/questions/51851677/how-to-get-argument-types-from-function-in-typescript
 type ArgumentTypes<F extends Function> = F extends (...args: infer A) => any ? A : never;
 
 type Commands = typeof ALL_COMMANDS;
 type CommandName = keyof Commands;
-
-
-
-
-
-const runCliCommand = (args: {
-	command: string,
-	args?: string[]
-}) => {
-	runWallyCliCommand(args.command, ...(args.args ? args.args : []));
-};
-
-const previewFile = (args: {
-	fileUri: string | vscode.Uri
-}) => {
-	if (typeof args.fileUri === "string") {
-		const uri = vscode.Uri.parse(args.fileUri);
-		vscode.commands.executeCommand("markdown.showPreview", uri);
-	} else {
-		vscode.commands.executeCommand("markdown.showPreview", args.fileUri);
-	}
-};
-
-const error = (args: {
-	message: string
-}) => {
-	vscode.window.showErrorMessage(args.message);
-};
-
-const warn = (args: {
-	message: string
-}) => {
-	vscode.window.showWarningMessage(args.message);
-};
-
-const hint = (args: {
-	message: string
-}) => {
-	vscode.window.showInformationMessage(args.message);
-};
-
-
-
-
-
-const ALL_COMMANDS = {
-	runCliCommand: runCliCommand,
-	previewFile: previewFile,
-	error: error,
-	warn: warn,
-	hint: hint,
-};
 
 
 
@@ -101,12 +61,12 @@ export class WallyCommandsProvider implements vscode.Disposable {
 		}
 	}
 	
-	run<N extends CommandName>(commandName: N, ...args: ArgumentTypes<Commands[N]>) {
+	run<Name extends CommandName>(commandName: Name, ...args: ArgumentTypes<Commands[Name]>): ReturnType<Commands[Name]> {
 		const handler = ALL_COMMANDS[commandName];
 		// We need to cast here because of typescript error 2556:
 		// "A spread argument must either have a tuple type or be passed to a rest parameter"
 		// Correct types are always enforced by the above arguments anyways
 		const untyped = handler as any;
-		untyped(...args);
+		return untyped(...args);
 	};
 }
