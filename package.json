@@ -34,6 +34,12 @@
 				]
 			}
 		],
+		"commands": [
+			{
+				"command": "wally.search",
+				"title": "Wally: Search"
+			}
+		],
 		"configuration": {
 			"title": "Wally Utilities",
 			"properties": {

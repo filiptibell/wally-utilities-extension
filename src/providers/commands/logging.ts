@@ -27,7 +27,7 @@ export const hint = (args: {
 
 
 export default {
-	error: error,
-	warn: warn,
-	hint: hint,
+	error,
+	warn,
+	hint,
 };;

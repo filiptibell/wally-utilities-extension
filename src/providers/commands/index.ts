@@ -1,13 +1,17 @@
 import * as vscode from "vscode";
 
+import { getGlobalLog, WallyLogHelper } from "../../utils/logger";
+
 import cliCommands from "./cli";
 import fileCommands from "./files";
 import loggingCommands from "./logging";
+import wallyCommands from "./wally";
 
 const ALL_COMMANDS = {
 	...cliCommands,
 	...fileCommands,
 	...loggingCommands,
+	...wallyCommands,
 };
 
 
@@ -38,18 +42,30 @@ export const getCommandLinkWithArgs = <N extends CommandName>(commandName: N, ..
 
 
 export class WallyCommandsProvider implements vscode.Disposable {
+	private log: WallyLogHelper;
+	
 	private disposed: boolean = false;
 	private disposables: vscode.Disposable[];
 	
 	constructor() {
 		const disposables = [];
-		for (const [commandIdentifier, commandHandler] of Object.entries(ALL_COMMANDS)) {
-			disposables.push(vscode.commands.registerCommand(
-				commandIdentifier,
-				commandHandler,
-			));
+		for (const [commandName, commandHandler] of Object.entries(ALL_COMMANDS)) {
+			const commandIdentifier = `wally.${commandName}`;
+			disposables.push(vscode.commands.registerCommand(commandIdentifier, (...args) => {
+				// Log some debugging stuff
+				this.log.normalText(`Running command "${commandName}"`);
+				if (this.log.isVerbose()) {
+					this.log.verboseText("Arguments:");
+					this.log.verboseJson(args);
+				}
+				// We need to cast here because of typescript
+				// error 2556, see run method for more info.
+				const untyped = commandHandler as any;
+				return untyped(...args);
+			}));
 		}
 		this.disposables = disposables;
+		this.log = getGlobalLog();
 	}
 	
 	dispose() {
@@ -62,10 +78,10 @@ export class WallyCommandsProvider implements vscode.Disposable {
 	}
 	
 	run<Name extends CommandName>(commandName: Name, ...args: ArgumentTypes<Commands[Name]>): ReturnType<Commands[Name]> {
-		const handler = ALL_COMMANDS[commandName];
-		// We need to cast here because of typescript error 2556:
+		// We need to cast `handler` to `any` here because of typescript error 2556:
 		// "A spread argument must either have a tuple type or be passed to a rest parameter"
-		// Correct types are always enforced by the above arguments anyways
+		// Correct types are always enforced by the above arguments
+		const handler = ALL_COMMANDS[commandName];
 		const untyped = handler as any;
 		return untyped(...args);
 	};
