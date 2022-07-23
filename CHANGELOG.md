@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Fixed having to reload the window for new extension settings to apply
+
 ## `[0.4.2]` - July 23, 2022
 
 ### Fixed

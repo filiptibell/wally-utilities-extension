@@ -45,7 +45,7 @@ import {
 
 
 export function activate(context: vscode.ExtensionContext) {
-	const conf = vscode.workspace.getConfiguration('wally');
+	let conf = vscode.workspace.getConfiguration("wally");
 	
 	// Set initial config stuff
 	setGitHubAuthToken(conf.get<string>("auth.token") || null);
@@ -93,21 +93,31 @@ export function activate(context: vscode.ExtensionContext) {
 	
 	// Listen to extension configuration changing
 	const configDisposable = vscode.workspace.onDidChangeConfiguration(event => {
-		log.normalText(`Changed extension config`);
-		if (event.affectsConfiguration("auth.token")) {
-			setGitHubAuthToken(conf.get<string>("auth.token") || null);
-		} else if (event.affectsConfiguration("statusBar.enabled")) {
-			statusBar.setIsEnabled(conf.get<boolean>("statusBar.enabled"));
-		} else if (event.affectsConfiguration("completion.enabled")) {
-			compl.setEnabled(conf.get<boolean>("completion.enabled") !== false);
-		} else if (event.affectsConfiguration("diagnostics.enabled")) {
-			diags.setEnabled(conf.get<boolean>("diagnostics.enabled") !== false);
-		} else if (event.affectsConfiguration("hover.enabled")) {
-			hover.setEnabled(conf.get<boolean>("hover.enabled") !== false);
-		} else if (event.affectsConfiguration("log.level")) {
-			const logLevel = conf.get<WallyLogLevel>("log.level");
-			if (logLevel) {
-				log.setLevel(logLevel);
+		// Check if a setting for this specific extension changed
+		if (event.affectsConfiguration("wally")) {
+			log.normalText(`Changed extension config`);
+			// Reload config & create small helper to
+			// add extension prefix to setting names
+			conf = vscode.workspace.getConfiguration("wally");
+			const didChange = (section: string) => {
+				return event.affectsConfiguration(`wally.${section}`);
+			};
+			// Check what specific setting changed
+			if (didChange("auth.token")) {
+				setGitHubAuthToken(conf.get<string>("auth.token") || null);
+			} else if (didChange("statusBar.enabled")) {
+				statusBar.setIsEnabled(conf.get<boolean>("statusBar.enabled"));
+			} else if (didChange("completion.enabled")) {
+				compl.setEnabled(conf.get<boolean>("completion.enabled") !== false);
+			} else if (didChange("diagnostics.enabled")) {
+				diags.setEnabled(conf.get<boolean>("diagnostics.enabled") !== false);
+			} else if (didChange("hover.enabled")) {
+				hover.setEnabled(conf.get<boolean>("hover.enabled") !== false);
+			} else if (didChange("log.level")) {
+				const logLevel = conf.get<WallyLogLevel>("log.level");
+				if (logLevel) {
+					log.setLevel(logLevel);
+				}
 			}
 		}
 	});
@@ -117,8 +127,8 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(statusBar);
 	context.subscriptions.push(diags);
 	context.subscriptions.push(complDisposable);
-	context.subscriptions.push(configDisposable);
 	context.subscriptions.push(hoverDisposable);
+	context.subscriptions.push(configDisposable);
 	for (const commandDisposable of commandDisposables) {
 		context.subscriptions.push(commandDisposable);
 	}
