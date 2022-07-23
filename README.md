@@ -9,75 +9,86 @@
 
 <br>
 
-This VSCode extension provides some nice-to-haves when using the [Wally](https://wally.run) package manager.
+This extension provides useful features inside of VSCode for the [Wally](https://wally.run) package manager.
 
 The extension can be downloaded from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=filiptibell.wally-utilities).
+
+
+
+
 
 ----
 
 <h2 align="center">Features</h2>
 
-<!--- Code Completions --->
-<details>
-<summary><b>Code Completions</b></summary>
+
+
+
+
+<!--- Hovers --->
+
+<h3>🔎&nbsp Hovers &nbsp🔍</h3>
+<i>Information about dependencies on hover</i>
+
 <br>
 
-<i>Autocomplete for dependencies</i>
+- Package author(s), name, and description
+- Direct links to readme & changelog, if the package is downloaded
+- Direct link to the package on the official [wally.run](https://wally.run) page
+
+<div align="center">
+<img src="assets/images/Hovers.png"/>
+</div>
+
+
+
+
+
+<!--- Code Completions --->
+
+<h3>🔮&nbsp Code Completions &nbsp🔮</h3>
+<i>Autocomplete for package dependencies</i>
+
+<br>
 
 - Package authors (scopes)
 - Package names
 - Package versions, including prereleases
 
-</details>
-
 <div align="center">
 <img src="assets/images/CodeCompletions.png"/>
 </div>
 
-<!--- Diagnostics --->
-<details>
-<summary><b>Diagnostics</b></summary>
-<br>
 
-<i>Diagnostics for dependencies and package fields, including but not limited to:</i>
+
+
+
+<!--- Diagnostics --->
+
+<h3>ℹ️&nbsp Diagnostics &nbspℹ️</h3>
+<i>Diagnostics for dependencies and package fields</i>
+
+<br>
 
 - Incomplete dependency (Author / name / version is missing)
 - Invalid dependency (Author / name / version does not exist)
 - Incorrect dependency realm
 - A newer version of a package is available
 
-</details>
-
 <div align="center">
 <img src="assets/images/Diagnostics.png"/>
 </div>
 
-<!--- Hovers --->
-<details>
-<summary><b>Hovers</b></summary>
+
+
+
+
+----
+
+<h2 align="center">Extras</h2>
+
 <br>
 
-<i>Information about a package on hover, including:</i>
-
-- Package author(s), name, and description
-- Direct links to readme & changelog, if the package is downloaded
-- Direct link to the package on the official [wally.run](https://wally.run) page
-
-</details>
-
-<div align="center">
-<img src="assets/images/Hovers.png"/>
-</div>
-
-<!--- Misc --->
-<details>
-<summary><b>Misc</b></summary>
-<br>
-
-<i>Miscellaneous notes and extra features</i>
-
-- Fully supports any number of fallback registries, in addition to the [public registry](https://github.com/UpliftGames/wally-index)
 - Adds the TOML language to the `wally.lock` file, giving it proper syntax highlighting
+- Fully supports any number of fallback registries, in addition to the [public registry](https://github.com/UpliftGames/wally-index)
 - The theme used in the screenshots above is [One Dark Pro](https://marketplace.visualstudio.com/items?itemName=zhuangtongfa.Material-theme)
-
-</details>
