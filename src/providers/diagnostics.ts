@@ -8,7 +8,7 @@ import { isValidSemver } from "../utils/semver";
 
 import { matchClosestOption, getMatchDistance } from "../utils/matching";
 
-import { WallyFilesystemWatcher } from "../wally/watcher";
+import { WallyManifestFilesystemWatcher } from "../wally/watcher";
 
 import { getRealmCorrection, getRealmSection, WallyPackageRealm } from "../wally/base";
 
@@ -366,7 +366,9 @@ export class WallyDiagnosticsProvider implements vscode.Disposable {
 	
 	private enabled: boolean;
 	
-	constructor(watcher: WallyFilesystemWatcher, statusBar: WallyStatusBarProvider) {
+	private disposed: boolean = false;
+	
+	constructor(watcher: WallyManifestFilesystemWatcher, statusBar: WallyStatusBarProvider) {
 		this.log = getGlobalLog();
 		this.bar = statusBar;
 		this.col = vscode.languages.createDiagnosticCollection("wally");
@@ -385,18 +387,30 @@ export class WallyDiagnosticsProvider implements vscode.Disposable {
 	}
 	
 	dispose() {
-		this.documents.clear();
-		this.col.dispose();
+		if (this.disposed !== true) {
+			this.disposed = true;
+			this.documents.clear();
+			this.col.dispose();
+		}
 	}
 	
-	async init(uri: vscode.Uri, doc: vscode.TextDocument) {
+	private async init(uri: vscode.Uri, doc: vscode.TextDocument) {
+		// Make sure provider has not been disposed
+		if (this.disposed) {
+			return;
+		}
+		// Initialize the given document
 		if (!this.documents.has(uri.path)) {
 			this.documents.set(uri.path, doc);
 			this.refresh(uri, doc);
 		}
 	}
 	
-	async refresh(uri: vscode.Uri, doc: vscode.TextDocument) {
+	private async refresh(uri: vscode.Uri, doc: vscode.TextDocument) {
+		// Make sure provider has not been disposed
+		if (this.disposed) {
+			return;
+		}
 		// Check if this uri has been registered for diagnostics
 		if (this.documents.has(uri.path)) {
 			if (this.enabled) {
@@ -450,14 +464,19 @@ export class WallyDiagnosticsProvider implements vscode.Disposable {
 		}
 	}
 	
-	async delete(uri: vscode.Uri) {
+	private async delete(uri: vscode.Uri) {
+		// Make sure provider has not been disposed
+		if (this.disposed) {
+			return;
+		}
+		// Delete the given document
 		if (this.documents.has(uri.path)) {
 			this.documents.delete(uri.path);
 			this.col.delete(uri);
 		}
 	}
 	
-	async refreshAll() {
+	private async refreshAll() {
 		const promises = [];
 		for (const doc of this.documents.values()) {
 			promises.push(this.refresh(doc.uri, doc));

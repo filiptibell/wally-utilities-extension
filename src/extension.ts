@@ -9,36 +9,15 @@ import {
 	getGlobalLog,
 } from "./utils/logger";
 
-import {
-	WallyFilesystemWatcher,
-} from "./wally/watcher";
+import { WallyManifestFilesystemWatcher, } from "./wally/watcher";
+import { setGitHubAuthToken, } from "./wally/github";
+import { getRegistryHelper, } from "./wally/registry";
 
-import {
-	setGitHubAuthToken,
-} from "./wally/github";
-
-import {
-	getRegistryHelper,
-} from "./wally/registry";
-
-import { ALL_COMMANDS } from "./providers/commands";
-
-import {
-	WALLY_COMPLETION_SELECTOR,
-	WALLY_COMPLETION_TRIGGERS,
-	WallyCompletionProvider,
-} from "./providers/completion";
-
+import { WallyCommandsProvider } from "./providers/commands";
+import { WallyCompletionProvider } from "./providers/completion";
 import { WallyDiagnosticsProvider } from "./providers/diagnostics";
-
-import {
-	WALLY_HOVER_SELECTOR,
-	WallyHoverProvider,
-} from "./providers/hover";
-
-import {
-	WallyStatusBarProvider,
-} from "./providers/statusbar";
+import { WallyHoverProvider} from "./providers/hover";
+import { WallyStatusBarProvider } from "./providers/statusbar";
 
 
 
@@ -47,52 +26,37 @@ import {
 export function activate(context: vscode.ExtensionContext) {
 	let conf = vscode.workspace.getConfiguration("wally");
 	
-	// Set initial config stuff
+	// Set initial global configs
 	setGitHubAuthToken(conf.get<string>("auth.token") || null);
 	
-	// Set initial log level for global log
+	// Set initial global log level
 	const log = getGlobalLog();
 	const logLevel = conf.get<WallyLogLevel>("log.level");
 	if (logLevel) {
 		log.setLevel(logLevel);
 	}
 	
-	// Create filesystem watcher for wally.toml files
-	const watcher = new WallyFilesystemWatcher();
-	
 	// Always cache the public wally registry authors for fast initial autocomplete
-	const publicRegistry = getRegistryHelper(PUBLIC_REGISTRY_URL);
-	publicRegistry.getPackageAuthors();
+	getRegistryHelper(PUBLIC_REGISTRY_URL).getPackageAuthors();
 	
-	// Create all commands
-	const commandDisposables = new Array<vscode.Disposable>();
-	for (const [commandIdentifier, commandHandler] of ALL_COMMANDS) {
-		commandDisposables.push(vscode.commands.registerCommand(
-			commandIdentifier,
-			commandHandler,
-		));
-	}
+	// Create filesystem watcher for wally.toml files
+	const watcher = new WallyManifestFilesystemWatcher();
 	
-	// Create status bar provider
+	// Create all providers
+	const commands = new WallyCommandsProvider();
 	const statusBar = new WallyStatusBarProvider();
-	statusBar.setIsEnabled(conf.get<boolean>("statusBar.enabled"));
-	
-	// Create diagnostic provider
 	const diags = new WallyDiagnosticsProvider(watcher, statusBar);
-	diags.setEnabled(conf.get<boolean>("diagnostics.enabled") !== false);
-	
-	// Create completion provider
 	const compl = new WallyCompletionProvider();
-	compl.setEnabled(conf.get<boolean>("completion.enabled") !== false);
-	const complDisposable = vscode.languages.registerCompletionItemProvider(WALLY_COMPLETION_SELECTOR, compl, ...WALLY_COMPLETION_TRIGGERS);
-	
-	// Create hover provider
 	const hover = new WallyHoverProvider();
+	
+	// Set initial enabled states for providers
+	statusBar.setIsEnabled(conf.get<boolean>("statusBar.enabled"));
+	diags.setEnabled(conf.get<boolean>("diagnostics.enabled") !== false);
+	compl.setEnabled(conf.get<boolean>("completion.enabled") !== false);
 	hover.setEnabled(conf.get<boolean>("hover.enabled") !== false);
-	const hoverDisposable = vscode.languages.registerHoverProvider(WALLY_HOVER_SELECTOR, hover);
 	
 	// Listen to extension configuration changing
-	const configDisposable = vscode.workspace.onDidChangeConfiguration(event => {
+	const config = vscode.workspace.onDidChangeConfiguration(event => {
 		// Check if a setting for this specific extension changed
 		if (event.affectsConfiguration("wally")) {
 			log.normalText(`Changed extension config`);
@@ -131,14 +95,12 @@ export function activate(context: vscode.ExtensionContext) {
 	
 	// Add everything to cleanup on deactivation
 	context.subscriptions.push(watcher);
+	context.subscriptions.push(commands);
 	context.subscriptions.push(statusBar);
 	context.subscriptions.push(diags);
-	context.subscriptions.push(complDisposable);
-	context.subscriptions.push(hoverDisposable);
-	context.subscriptions.push(configDisposable);
-	for (const commandDisposable of commandDisposables) {
-		context.subscriptions.push(commandDisposable);
-	}
+	context.subscriptions.push(compl);
+	context.subscriptions.push(hover);
+	context.subscriptions.push(config);
 }
 
 export function deactivate() { }

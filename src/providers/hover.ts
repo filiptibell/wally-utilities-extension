@@ -16,6 +16,8 @@ import { getRegistryHelper, WallyRegistryHelper } from "../wally/registry";
 
 import { findFileUriInPackageRoot, findInstalledPackageRootUri } from "../wally/fs";
 
+import { getCommandLinkWithArgs } from "./commands";
+
 
 
 
@@ -38,12 +40,6 @@ const parseAuthorName = (author: string) => {
 		parensStartIdx >= 0 ? parensStartIdx : author.length
 	);
 	return author.slice(0, detailStartIdx).trim();
-};
-
-const uriToPreviewCommandLink = (uri: vscode.Uri) => {
-	const args = [{ fileUri: uri }];
-	const encoded = encodeURIComponent(JSON.stringify(args));
-	return vscode.Uri.parse(`command:wally.previewFile?${encoded}`);
 };
 
 const createDependencyHoverMarkdown = async (dependency: WallyManifestDependency, info: WallyGithubRegistryPackageVersion) => {
@@ -93,8 +89,12 @@ const createDependencyHoverMarkdown = async (dependency: WallyManifestDependency
 			findFileUriInPackageRoot(rootUri, "README"),
 			findFileUriInPackageRoot(rootUri, "CHANGELOG"),
 		]);
-		const readmeLink = readmeUri ? uriToPreviewCommandLink(readmeUri) : null;
-		const changelogLink = changelogUri ? uriToPreviewCommandLink(changelogUri) : null;
+		const readmeLink = readmeUri ? getCommandLinkWithArgs("previewFile", {
+			fileUri: readmeUri.path
+		}) : null;
+		const changelogLink = changelogUri ? getCommandLinkWithArgs("previewFile", {
+			fileUri: changelogUri.path
+		}) : null;
 		if (readmeLink && changelogLink) {
 			mkdown.appendMarkdown("<p>");
 			mkdown.appendMarkdown(`<a href = "${readmeLink}">$(link) Readme </a>`);
@@ -123,14 +123,28 @@ const createDependencyHoverMarkdown = async (dependency: WallyManifestDependency
 
 
 
-export class WallyHoverProvider implements vscode.HoverProvider {
+export class WallyHoverProvider implements vscode.Disposable, vscode.HoverProvider {
 	private log: WallyLogHelper;
 	
 	private enabled: boolean;
 	
+	private disposed: boolean = false;
+	private disposable: vscode.Disposable;
+	
 	constructor() {
 		this.log = getGlobalLog();
 		this.enabled = true;
+		this.disposable = vscode.languages.registerHoverProvider(
+			WALLY_HOVER_SELECTOR,
+			this
+		);
+	}
+	
+	dispose() {
+		if (this.disposed !== true) {
+			this.disposed = true;
+			this.disposable.dispose();
+		}
 	}
 	
 	async provideDependencyHover(registry: WallyRegistryHelper, dependency: WallyManifestDependency) {
@@ -168,6 +182,10 @@ export class WallyHoverProvider implements vscode.HoverProvider {
 	}
 	
 	async provideHover(document: vscode.TextDocument, position: vscode.Position) {
+		// Make sure provider has not been disposed
+		if (this.disposed) {
+			return null;
+		}
 		// Make sure completion is enabled
 		if (!this.enabled) {
 			this.log.verboseText("Hover is not enabled");

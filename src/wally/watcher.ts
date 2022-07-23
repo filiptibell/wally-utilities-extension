@@ -11,7 +11,7 @@ type WallyWatcherDeletedCallback = (uri: vscode.Uri) => Promise<void> | void;
 
 
 
-export class WallyFilesystemWatcher implements vscode.Disposable {
+export class WallyManifestFilesystemWatcher implements vscode.Disposable {
 	private documents: Map<string, vscode.TextDocument> = new Map();
 	
 	private listenersCreated: Set<WallyWatcherChangedCallback> = new Set();

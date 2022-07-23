@@ -43,14 +43,29 @@ const sliceToAfterNearestSeparator = (str: string, index: number) => {
 
 
 
-export class WallyCompletionProvider implements vscode.CompletionItemProvider<vscode.CompletionItem> {
+export class WallyCompletionProvider implements vscode.Disposable, vscode.CompletionItemProvider<vscode.CompletionItem> {
 	private log: WallyLogHelper;
 	
 	private enabled: boolean;
 	
+	private disposed: boolean = false;
+	private disposable: vscode.Disposable;
+	
 	constructor() {
 		this.log = getGlobalLog();
 		this.enabled = true;
+		this.disposable = vscode.languages.registerCompletionItemProvider(
+			WALLY_COMPLETION_SELECTOR,
+			this,
+			...WALLY_COMPLETION_TRIGGERS
+		);
+	}
+	
+	dispose() {
+		if (this.disposed !== true) {
+			this.disposed = true;
+			this.disposable.dispose();
+		}
 	}
 	
 	private async providePackageAuthorCompletions(registry: string, items: vscode.CompletionItem[], author: string) {
@@ -133,6 +148,10 @@ export class WallyCompletionProvider implements vscode.CompletionItemProvider<vs
 	}
 	
 	async provideCompletionItems(document: vscode.TextDocument, position: vscode.Position) {
+		// Make sure provider has not been disposed
+		if (this.disposed) {
+			return null;
+		}
 		// Make sure completion is enabled
 		if (!this.enabled) {
 			this.log.verboseText("Completion is not enabled");
