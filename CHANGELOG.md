@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## `[0.4.3]` - July 23, 2022
+
+### Added
+
+- Added a basic search command using the Wally search api
 
 ### Fixed
 
