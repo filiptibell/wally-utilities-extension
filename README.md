@@ -28,7 +28,7 @@ The extension can be downloaded from the [Visual Studio Marketplace](https://mar
 <!--- Hovers --->
 
 <h3>🔎&nbsp Hovers &nbsp🔍</h3>
-<i>Information about dependencies on hover</i>
+<i>Information about dependencies on hover  </i>
 
 <br/>
 
@@ -47,7 +47,7 @@ The extension can be downloaded from the [Visual Studio Marketplace](https://mar
 <!--- Code Completions --->
 
 <h3>🔮&nbsp Code Completions &nbsp🔮</h3>
-<i>Autocomplete for package dependencies</i>
+<i>Autocomplete for package dependencies  </i>
 
 <br/>
 
@@ -66,7 +66,7 @@ The extension can be downloaded from the [Visual Studio Marketplace](https://mar
 <!--- Diagnostics --->
 
 <h3>ℹ️&nbsp Diagnostics &nbspℹ️</h3>
-<i>Diagnostics for dependencies and package fields</i>
+<i>Diagnostics for dependencies and package fields  </i>
 
 <br/>
 
@@ -86,8 +86,6 @@ The extension can be downloaded from the [Visual Studio Marketplace](https://mar
 ----
 
 <h2 align="center">Extras</h2>
-
-<br/>
 
 - Adds the TOML language to the `wally.lock` file, giving it proper syntax highlighting
 - Fully supports any number of fallback registries, in addition to the [public registry](https://github.com/UpliftGames/wally-index)
