@@ -13,7 +13,7 @@ export type DependencyPartial = {
 
 const WORD_PATTERN = "([a-zA-Z]+?[a-zA-Z0-9\-]*)";
 
-const AUTHOR_PATTERN = "([a-zA-Z0-9\-]+"
+const AUTHOR_PATTERN = "([a-zA-Z0-9\-]+)"
 
 const VERSION_PATTERN = "([\d\.\-a-zA-Z]+)$";
 
