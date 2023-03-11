@@ -13,12 +13,15 @@ export type DependencyPartial = {
 
 const WORD_PATTERN = "([a-zA-Z]+?[a-zA-Z0-9\-]*)";
 
+const AUTHOR_PATTERN = "([a-zA-Z0-9\-]+)"
+
 const VERSION_PATTERN = "([\d\.\-a-zA-Z]+)$";
 
 const SEPARATOR_WORD = "\/";
 const SEPARATOR_VERSION = "@";
 
 const REGEX_WORD = new RegExp("^" + WORD_PATTERN);
+const REGEX_AUTHOR = new RegExp("^" + AUTHOR_PATTERN);
 const REGEX_SEPARATED_WORDS = new RegExp("^" + WORD_PATTERN + SEPARATOR_WORD + WORD_PATTERN);
 const REGEX_VERSION_STRICT = new RegExp(VERSION_PATTERN);
 
@@ -38,7 +41,7 @@ export const matchUserAndRepo = matchTwoWords;
 export const matchAuthorAndPackage = matchTwoWords;
 
 export const matchAuthor = (str: string) => {
-	const result = REGEX_WORD.exec(str);
+	const result = REGEX_AUTHOR.exec(str);
 	if (result) {
 		return result[1];
 	}
