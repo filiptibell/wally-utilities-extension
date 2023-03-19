@@ -1,5 +1,11 @@
 # Changelog
 
+## `[0.4.5]` - March 19th, 2023
+
+### Fixed
+
+-   Fixed readme so that the extension publishes properly
+
 ## `[0.4.4]` - March 11th, 2023
 
 ### Fixed

@@ -4,7 +4,7 @@
 <h1 align="center">Wally Utilities</h1>
 
 <div align="center">
-<img src="https://vsmarketplacebadge.apphb.com/version/filiptibell.wally-utilities.svg"/>
+<img src="https://vsmarketplacebadges.dev/version/filiptibell.wally-utilities.svg"/>
 </div>
 
 <br/>
@@ -13,17 +13,9 @@ This extension provides useful features inside of VSCode for the [Wally](https:/
 
 The extension can be downloaded from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=filiptibell.wally-utilities).
 
-
-
-
-
-----
+---
 
 <h2 align="center">Features</h2>
-
-
-
-
 
 <!--- Hovers --->
 
@@ -32,17 +24,13 @@ The extension can be downloaded from the [Visual Studio Marketplace](https://mar
 
 <br/>
 
-- Package author(s), name, and description
-- Direct links to readme & changelog, if the package is downloaded
-- Direct link to the package on the official [wally.run](https://wally.run) page
+-   Package author(s), name, and description
+-   Direct links to readme & changelog, if the package is downloaded
+-   Direct link to the package on the official [wally.run](https://wally.run) page
 
 <div align="center">
 <img src="assets/images/Hovers.png"/>
 </div>
-
-
-
-
 
 <!--- Code Completions --->
 
@@ -51,17 +39,13 @@ The extension can be downloaded from the [Visual Studio Marketplace](https://mar
 
 <br/>
 
-- Package authors (scopes)
-- Package names
-- Package versions, including prereleases
+-   Package authors (scopes)
+-   Package names
+-   Package versions, including prereleases
 
 <div align="center">
 <img src="assets/images/CodeCompletions.png"/>
 </div>
-
-
-
-
 
 <!--- Diagnostics --->
 
@@ -70,23 +54,19 @@ The extension can be downloaded from the [Visual Studio Marketplace](https://mar
 
 <br/>
 
-- Incomplete dependency (Author / name / version is missing)
-- Invalid dependency (Author / name / version does not exist)
-- Incorrect dependency realm
-- A newer version of a package is available
+-   Incomplete dependency (Author / name / version is missing)
+-   Invalid dependency (Author / name / version does not exist)
+-   Incorrect dependency realm
+-   A newer version of a package is available
 
 <div align="center">
 <img src="assets/images/Diagnostics.png"/>
 </div>
 
-
-
-
-
-----
+---
 
 <h2 align="center">Extras</h2>
 
-- Adds the TOML language to the `wally.lock` file, giving it proper syntax highlighting
-- Fully supports any number of fallback registries, in addition to the [public registry](https://github.com/UpliftGames/wally-index)
-- The theme used in the screenshots above is [One Dark Pro](https://marketplace.visualstudio.com/items?itemName=zhuangtongfa.Material-theme)
+-   Adds the TOML language to the `wally.lock` file, giving it proper syntax highlighting
+-   Fully supports any number of fallback registries, in addition to the [public registry](https://github.com/UpliftGames/wally-index)
+-   The theme used in the screenshots above is [One Dark Pro](https://marketplace.visualstudio.com/items?itemName=zhuangtongfa.Material-theme)
