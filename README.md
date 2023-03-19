@@ -4,7 +4,7 @@
 <h1 align="center">Wally Utilities</h1>
 
 <div align="center">
-<img src="https://vsmarketplacebadges.dev/version/filiptibell.wally-utilities.svg"/>
+<img src="https://vsmarketplacebadges.dev/version/filiptibell.wally-utilities.png"/>
 </div>
 
 <br/>
