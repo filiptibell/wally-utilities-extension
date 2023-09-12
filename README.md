@@ -1,6 +1,16 @@
 <!-- Disable lint that disallows html -->
 <!-- markdownlint-disable MD033 -->
 
+<h1 align="center">Deprecated</h1>
+
+This VSCode extension has been deprecated in favor of [Tooling Language Server](https://github.com/filiptibell/tooling-language-server), which is a language server compatible with multiple editors. I recommend all users of Wally Utilities migrate to using the Tooling Language Server.
+
+---
+
+---
+
+---
+
 <h1 align="center">Wally Utilities</h1>
 
 <div align="center">
